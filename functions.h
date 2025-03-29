@@ -1,7 +1,13 @@
 #include "structs.h"
 
-
-#define TAM_TABELA (sizeof(tabela) / sizeof(Mapeamento))
+// Função para converter vírgula para ponto em números decimais
+void substituirVirgulaPorPonto(char *str) {
+    for (int i = 0; str[i]; i++) {
+        if (str[i] == ',') {
+            str[i] = '.';
+        }
+    }
+}
 
 void converter_para_minusculo(char *str) {
     for (int i = 0; str[i] != '\0'; i++) {

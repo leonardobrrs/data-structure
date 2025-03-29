@@ -1,6 +1,26 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <locale.h>
+
+#define TAM_TABELA (sizeof(tabela) / sizeof(Mapeamento))
+#define MAX_LINHA 1024
+#define MAX_DISCIPLINAS 100
+
+// Estrutura para armazenar os dados da disciplina
+typedef struct {
+    char codigo[10];       // Código da disciplina (ex: COMP200)
+    char nome[50];         // Nome da disciplina (ex: INGLÊS)
+    float nota;            // Nota (ex: 7.7)
+} Disciplinas_Cursadas;
+
+// Estrutura para armazenar os períodos e suas disciplinas
+typedef struct {
+    int numeroPeriodos;         // Número de períodos cursados
+    int quantidadeDisciplinas;  // Quantidade total de disciplinas
+    Disciplinas_Cursadas disciplinas[MAX_DISCIPLINAS]; // Array de disciplinas
+} Historico;
 
 // Mapeamento de caracteres para valores numéricos
 typedef struct {
