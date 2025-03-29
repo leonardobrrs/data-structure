@@ -8,6 +8,14 @@
 #define MAX_LINHA 1024
 #define MAX_DISCIPLINAS 100
 
+typedef struct {
+    int max_disciplinas;
+    int tempo_conclusao;
+    int enfase;
+    int distribuicao_disciplinas;
+} Planejamento_Academico;
+
+
 // Estrutura para armazenar os dados da disciplina
 typedef struct {
     char codigo[10];       // Código da disciplina (ex: COMP200)

@@ -58,48 +58,54 @@ void planejamento_academico(char *nome_completo) {
         num_nomes++;
         token = strtok(NULL, " ");
     }
+
+    Planejamento_Academico planejamento_academico;
+    planejamento_academico.max_disciplinas = -1;
+    planejamento_academico.tempo_conclusao = -1;
+    planejamento_academico.enfase = -1;
+    planejamento_academico.distribuicao_disciplinas = -1;
     
     if (num_nomes == 0) return; // Caso de entrada vazia
 
     int peso1 = calcular_peso(nome[0]);
-    int max_disciplinas = determinar_max_disciplinas(peso1);
+    planejamento_academico.max_disciplinas = determinar_max_disciplinas(peso1);
     int peso2 = calcular_peso(nome[1 % num_nomes]);
-    int tempo_conclusao = determinar_tempo_conclusao(peso2);
+    planejamento_academico.tempo_conclusao = determinar_tempo_conclusao(peso2);
     int peso3 = calcular_peso(nome[2 % num_nomes]);
-    int enfase = determinar_enfase(peso3);
+    planejamento_academico.enfase = determinar_enfase(peso3);
     int peso4 = calcular_peso(nome[3 % num_nomes]);
-    int distribuicao_disciplinas = determinar_distribuicao_disciplinas(peso4);
+    planejamento_academico.distribuicao_disciplinas = determinar_distribuicao_disciplinas(peso4);
 
 
-    if(max_disciplinas == 0){
-        printf("Peso máximo de disciplinas: %d, Resto: %d (Limite máximo: 10)\n", peso1, max_disciplinas);
-    } else if( max_disciplinas == 1){
-        printf("Peso máximo de disciplinas: %d, Resto: %d (Limite máximo: 8)\n", peso1, max_disciplinas);
+    if(planejamento_academico.max_disciplinas == 0){
+        printf("Peso máximo de disciplinas: %d, Resto: %d (Limite máximo: 10)\n", peso1, planejamento_academico.max_disciplinas);
+    } else if( planejamento_academico.max_disciplinas == 1){
+        printf("Peso máximo de disciplinas: %d, Resto: %d (Limite máximo: 8)\n", peso1, planejamento_academico.max_disciplinas);
     } else{
-        printf("Peso máximo de disciplinas: %d, Resto: %d (Limite máximo: 6)\n", peso1, max_disciplinas);
+        printf("Peso máximo de disciplinas: %d, Resto: %d (Limite máximo: 6)\n", peso1, planejamento_academico.max_disciplinas);
     }
 
-    if (tempo_conclusao == 0){
-        printf("Peso do tempo de conclusão: %d, Resto: %d (No menor tempo possível)\n", peso2, tempo_conclusao);
-    } else if (tempo_conclusao == 1){
-        printf("Peso do tempo de conclusão: %d, Resto: %d (No maior tempo possível)\n", peso2, tempo_conclusao);
+    if (planejamento_academico.tempo_conclusao == 0){
+        printf("Peso do tempo de conclusão: %d, Resto: %d (No menor tempo possível)\n", peso2, planejamento_academico.tempo_conclusao);
+    } else if (planejamento_academico.tempo_conclusao == 1){
+        printf("Peso do tempo de conclusão: %d, Resto: %d (No maior tempo possível)\n", peso2, planejamento_academico.tempo_conclusao);
     } else {
-        printf("Peso do tempo de conclusão: %d, Resto %d (Tempo medio possível)\n", peso2, tempo_conclusao);
+        printf("Peso do tempo de conclusão: %d, Resto %d (Tempo medio possível)\n", peso2, planejamento_academico.tempo_conclusao);
     }
 
-    if (enfase == 0){
-        printf("Peso da ênfase: %d, Resto: %d (Ênfase desejada pelo aluno)\n", peso3, enfase);
-    } else if (enfase == 1){
-        printf("Peso da ênfase: %d, Resto: %d (Ênfase que diminui o tempo de conclusão do curso)\n", peso3, enfase);
+    if (planejamento_academico.enfase == 0){
+        printf("Peso da ênfase: %d, Resto: %d (Ênfase desejada pelo aluno)\n", peso3, planejamento_academico.enfase);
+    } else if (planejamento_academico.enfase == 1){
+        printf("Peso da ênfase: %d, Resto: %d (Ênfase que diminui o tempo de conclusão do curso)\n", peso3, planejamento_academico.enfase);
     } else {
-        printf("Peso da ênfase: %d, Resto: %d (Nenhuma ênfase)\n", peso3, enfase);
+        printf("Peso da ênfase: %d, Resto: %d (Nenhuma ênfase)\n", peso3, planejamento_academico.enfase);
     }
     
-    if (distribuicao_disciplinas == 0){
-        printf("Peso da distribuição das disciplinas: %d, Resto: %d (As disciplinas devem ocupar o menor número de dias possíveis)\n", peso4, distribuicao_disciplinas);
-    } else if (distribuicao_disciplinas == 1){
-        printf("Peso da distribuição das disciplinas: %d, Resto %d (as disciplinas devem pertencer a um mesmo turno)\n", peso4, distribuicao_disciplinas);
+    if (planejamento_academico.distribuicao_disciplinas == 0){
+        printf("Peso da distribuição das disciplinas: %d, Resto: %d (As disciplinas devem ocupar o menor número de dias possíveis)\n", peso4, planejamento_academico.distribuicao_disciplinas);
+    } else if (planejamento_academico.distribuicao_disciplinas == 1){
+        printf("Peso da distribuição das disciplinas: %d, Resto %d (as disciplinas devem pertencer a um mesmo turno)\n", peso4, planejamento_academico.distribuicao_disciplinas);
     } else {
-        printf("Peso da distribuição das disciplinas: %d, Resto: %d (o aluno não deve extrapolar o limite de 3 disciplinas no máximo por dia, mas deve ir todos os dias a ufal)\n", peso4, distribuicao_disciplinas);
+        printf("Peso da distribuição das disciplinas: %d, Resto: %d (o aluno não deve extrapolar o limite de 3 disciplinas no máximo por dia, mas deve ir todos os dias a ufal)\n", peso4, planejamento_academico.distribuicao_disciplinas);
     }
 }
