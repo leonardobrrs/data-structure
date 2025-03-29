@@ -8,6 +8,7 @@
 #define MAX_LINHA 1024
 #define MAX_DISCIPLINAS 100
 
+// Estrutura para armazenar os pesos para o planejamento
 typedef struct {
     int max_disciplinas;
     int tempo_conclusao;
