@@ -1,5 +1,4 @@
 #include "functions.h"
-#include <errno.h> // Para usar 'perror' em erros de arquivo
 
 No* criaNovoNo(const char seq[], No* pai_no, int col_idx, double score_col) {
     // 1. Aloca memória
@@ -247,31 +246,54 @@ void gerarVariacoes(No* pai, int nSeq, char orig_seq[][MAX_LEN_ALN], int orig_le
     }
 }
 
-No* devolveMelhorFilho(No* pai) {
-    // 1. Verifica se o nó pai é válido e se ele tem filhos.
-    if (pai == NULL || pai->primogenito == NULL) {
-        return NULL; // Não há pai ou não há filhos para escolher.
-    }
-
-    // 2. Assume que o primeiro filho é o melhor inicialmente.
-    No* filho_atual = pai->primogenito;
-    No* melhor_filho = filho_atual;
-    double max_score = filho_atual->score;
-
-    // 3. Percorre a lista de irmãos (os outros filhos).
-    while (filho_atual->irmao != NULL) {
-        filho_atual = filho_atual->irmao; // Vai para o próximo irmão.
-
-        // 4. Se o score do irmão atual for maior que o máximo encontrado...
-        if (filho_atual->score > max_score) {
-            max_score = filho_atual->score; // ...atualiza o score máximo.
-            melhor_filho = filho_atual;   // ...e marca este irmão como o melhor.
+bool is_all_gaps(const char vet[], int nSeq) {
+    for (int i = 0; i < nSeq; i++) {
+        if (vet[i] != '-') {
+            return false; // Encontrou uma base, não é só gaps
         }
     }
-
-    // 5. Retorna o ponteiro para o nó filho que teve o maior score.
-    return melhor_filho;
+    return true; // Não encontrou bases, é só gaps
 }
+
+// No* devolveMelhorFilho(No* pai) {
+//     if (pai == NULL || pai->primogenito == NULL) {
+//         return NULL; 
+//     }
+
+//     No* filho_atual = pai->primogenito;
+//     No* melhor_filho = NULL; // Começa sem melhor filho
+//     double max_score = -DBL_MAX; // Começa com um score muito baixo
+//     No* fallback_all_gaps = NULL; // Guarda o nó 'só-gaps' caso seja a única opção
+//     int nSeq = strlen(filho_atual->varSeq); // Pega o nSeq do primeiro filho
+
+//     // Percorre todos os filhos
+//     while (filho_atual != NULL) {
+//         bool eh_so_gaps = is_all_gaps(filho_atual->varSeq, nSeq);
+
+//         // Se o filho atual for 'só-gaps'...
+//         if (eh_so_gaps) {
+//             fallback_all_gaps = filho_atual; // ... guarda ele como última opção.
+//         } 
+//         // Se o filho atual NÃO for 'só-gaps'...
+//         else {
+//             // ... e se o score dele for o maior encontrado ATÉ AGORA...
+//             if (filho_atual->score > max_score) {
+//                 max_score = filho_atual->score; // ... atualiza o score máximo.
+//                 melhor_filho = filho_atual;   // ... e marca ele como o melhor.
+//             }
+//         }
+//         filho_atual = filho_atual->irmao; // Vai para o próximo irmão.
+//     }
+
+//     // Se encontramos um 'melhor_filho' que NÃO é 'só-gaps', retorna ele.
+//     if (melhor_filho != NULL) {
+//         return melhor_filho;
+//     } 
+//     // Senão, retorna o 'só-gaps' (ou NULL se nem isso existia).
+//     else {
+//         return fallback_all_gaps;
+//     }
+// }
 
 void reconstruirAlinhamento(No* no_final, char alinhamento_final[][MAX_LEN_ALN], int nSeq, int max_len) {
     if (no_final == NULL) {
@@ -310,4 +332,16 @@ void imprimirAlinhamento(char seq[][MAX_LEN_ALN], int nSeq) {
     for (int i = 0; i < nSeq; i++) {
         printf("%s\n", seq[i]); // Imprime cada sequência alinhada
     }
+}
+
+int compare_nodes(const void *a, const void *b) {
+    // Converte os ponteiros genéricos para ponteiros para ponteiros de No
+    // Isso é necessário porque qsort trabalha com arrays de 'No*'
+    No* nodeA = *(No**)a;
+    No* nodeB = *(No**)b;
+
+    // Compara os scores para ordenar do MAIOR para o MENOR
+    if (nodeA->score < nodeB->score) return 1;  // B é maior, B vem antes
+    if (nodeA->score > nodeB->score) return -1; // A é maior, A vem antes
+    return 0; // Scores iguais, a ordem não importa
 }

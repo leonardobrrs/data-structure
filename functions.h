@@ -59,13 +59,21 @@ double calcScoreColuna(const char vet[], int nSeq);
 void gerarVariacoes(No* pai, int nSeq, char orig_seq[][MAX_LEN_ALN], int orig_lengths[], int col_idx);
 
 /**
- * @brief Encontra e retorna o nó filho com o maior score acumulado.
- * Implementa a escolha gulosa do algoritmo.
- * @param pai O nó pai cujos filhos serão avaliados.
- * @return No* Um ponteiro para o nó filho com o maior score, 
- * ou NULL se o pai não tiver filhos.
+ * @brief Verifica se uma coluna (vetor) é composta apenas por gaps ('-').
+ * @param vet A coluna a ser verificada.
+ * @param nSeq O número de sequências.
+ * @return true Se todos os caracteres forem '-', false caso contrário.
  */
-No* devolveMelhorFilho(No* pai);
+bool is_all_gaps(const char vet[], int nSeq);
+
+// /**
+//  * @brief Encontra e retorna o nó filho com o maior score, 
+//  * EVITANDO a coluna 'só-gaps' a menos que seja a única opção.
+//  * @param pai O nó pai cujos filhos serão avaliados.
+//  * @return No* Um ponteiro para o nó filho com o maior score, 
+//  * ou NULL se o pai não tiver filhos.
+//  */
+// No* devolveMelhorFilho(No* pai);
 
 /**
  * @brief Reconstrói a matriz de alinhamento a partir do nó final.
@@ -83,5 +91,10 @@ void reconstruirAlinhamento(No* no_final, char alinhamento_final[][MAX_LEN_ALN],
  * @param nSeq Número de sequências.
  */
 void imprimirAlinhamento(char seq[][MAX_LEN_ALN], int nSeq);
+
+/**
+ * @brief Função de comparação para qsort, ordena Nós por score (maior primeiro).
+ */
+int compare_nodes(const void *a, const void *b);
 
 #endif // FUNCTIONS_H

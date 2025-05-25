@@ -4,10 +4,14 @@
 #include <ctype.h>
 #include <time.h>
 #include <float.h>
+#include <stdbool.h>
+#include <errno.h> // Para usar 'perror' em erros de arquivo
 
 #define MAX_SEQS 50   // Limite para AB2
 #define MAX_LEN_INIT 100 // Limite inicial das sequências
 #define MAX_LEN_ALN 150  // Estimativa do tamanho máximo alinhado
+
+#define K_BEAM_WIDTH 5 // Largura do beam search
 
 #define ALPHA 1
 #define BETA 0
