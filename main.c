@@ -15,20 +15,25 @@ int main() {
     int sequencias_count = 0;
     int max_string_size = 0;
     int final_len = 0;
-    char nome_arquivo[100];
+
+    char nome_arquivo_base[100];         // Para o nome do arquivo digitado pelo usuário
+    char caminho_completo_arquivo[150]; // Para "data/nome_arquivo_base.txt"
 
     limparTela();
     printf("\n\t******** Alinhamento Multiplo de DNA - Nova Versao ********\n\n");
 
     // --- Passo 2: Leitura ---
-    printf("Digite o nome do arquivo .txt com as sequencias: ");
-    scanf("%99s", nome_arquivo); // Lê o nome do arquivo
+    printf("Digite o nome do arquivo .txt com as sequencias (ex: data.txt): ");
+    scanf("%99s", nome_arquivo_base); // Lê apenas o nome base do arquivo
+    // Constrói o caminho completo para o arquivo dentro da pasta "data"
+    sprintf(caminho_completo_arquivo, "data/%s", nome_arquivo_base);
 
-    sequencias_count = lerSequencias(nome_arquivo, sequencias, &max_string_size);
+    sequencias_count = lerSequencias(caminho_completo_arquivo, sequencias, &max_string_size); // Usa o caminho completo
 
     if (sequencias_count <= 0) {
-        printf("Erro ao ler o arquivo ou nenhuma sequencia valida encontrada.\n");
-        return 1; // Termina se houver erro
+        // Informa o caminho completo na mensagem de erro
+        printf("Erro ao ler o arquivo '%s' ou nenhuma sequencia valida encontrada.\n", caminho_completo_arquivo); 
+        return 1;
     }
 
     if (sequencias_count < 2) {
