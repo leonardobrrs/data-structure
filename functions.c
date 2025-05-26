@@ -14,10 +14,6 @@ void limparTela() {
 
 // --- Implementações das Funções da Árvore N-ária ---
 
-// Cria um novo nó para a árvore.
-// 'seq': string representando a coluna de alinhamento para este nó.
-// 'score_coluna': pontuação calculada para esta coluna.
-// Retorna: ponteiro para o nó recém-alocado e inicializado.
 No* criaNovoNo(char seq[], int score_coluna) {
     // Aloca memória dinamicamente para a estrutura do nó.
     No* novo = (No*)malloc(sizeof(No));
@@ -35,17 +31,11 @@ No* criaNovoNo(char seq[], int score_coluna) {
     return novo; // Retorna o ponteiro para o novo nó.
 }
 
-// Inicia a árvore criando um nó raiz "dummy" (fictício).
-// Este nó raiz não representa uma coluna real do alinhamento,
-// mas serve como ponto de partida para adicionar os nós reais.
-// Retorna: ponteiro para o nó raiz.
 No* iniciaArvore() {
     // Cria um nó com a string "RAIZ" e score 0 para servir como raiz.
     return criaNovoNo("RAIZ", 0);
 }
 
-// Insere um 'filho' a um nó 'pai' na árvore.
-// O novo filho é adicionado ao final da lista de irmãos do primogênito do pai.
 void inserirFilho(No* pai, No* filho) {
     if (!pai || !filho) return; // Retorna se o pai ou o filho forem nulos.
 
@@ -60,11 +50,7 @@ void inserirFilho(No* pai, No* filho) {
     }
 }
 
-// Encontra e retorna o ponteiro para o filho de um nó 'pai' que possui o maior score.
-// 'nSeq' não é utilizado nesta função, mas pode ter sido planejado para uso futuro.
-// Retorna: ponteiro para o filho com o maior score, ou NULL se o pai não tem filhos.
 No* devolveMelhorFilho(No *pai, int nSeq_unused) {
-    // 'nSeq_unused' é um parâmetro não utilizado aqui.
     if (!pai || !pai->primogenito) return NULL; // Se o pai é nulo ou não tem filhos, retorna NULL.
 
     No *filho_atual = pai->primogenito; // Começa a busca pelo primeiro filho.
@@ -82,8 +68,6 @@ No* devolveMelhorFilho(No *pai, int nSeq_unused) {
     return no_maior_score; // Retorna o ponteiro para o filho com o maior score.
 }
 
-// Libera recursivamente a memória alocada para a árvore (ou subárvore) a partir do 'no' dado.
-// Utiliza uma travessia em pós-ordem para garantir que os filhos sejam liberados antes do pai.
 void liberaArvore(No* no) {
     if (no == NULL) return;        // Condição de parada da recursão: nó nulo.
     liberaArvore(no->primogenito); // Libera recursivamente a subárvore do primogênito.
@@ -91,12 +75,6 @@ void liberaArvore(No* no) {
     free(no);                      // Libera a memória do nó atual.
 }
 
-// Constrói a matriz de alinhamento final ('final_seq') percorrendo o caminho "guloso"
-// na árvore (seguindo apenas os ponteiros 'primogenito' a partir da raiz).
-// 'raiz': nó raiz da árvore construída.
-// 'nSeq': número de sequências.
-// 'final_seq': matriz 2D para armazenar o alinhamento final.
-// 'final_len': ponteiro para inteiro, onde o comprimento do alinhamento final será armazenado.
 void reconstroiAlinhamento(No* raiz, int nSeq, char final_seq[][MAX_FINAL_LEN], int *final_len) {
     *final_len = 0; // Inicializa o comprimento do alinhamento final.
     No* atual = raiz->primogenito; // Começa do primeiro filho real (pula a raiz dummy "RAIZ").
@@ -120,12 +98,6 @@ void reconstroiAlinhamento(No* raiz, int nSeq, char final_seq[][MAX_FINAL_LEN], 
     }
 }
 
-// Função principal que realiza o alinhamento múltiplo de sequências usando a árvore N-ária.
-// 'orig_seq': matriz com as sequências originais.
-// 'lengths': array com os comprimentos pré-calculados de cada sequência original.
-// 'nSeq': número de sequências.
-// 'final_seq': matriz para armazenar o resultado do melhor alinhamento.
-// 'final_len': ponteiro para armazenar o comprimento do alinhamento final.
 void alinhaComArvore(char orig_seq[][MAX_FINAL_LEN], int lengths[], int nSeq, char final_seq[][MAX_FINAL_LEN], int *final_len) {
     int proximo_char[MAX_SEQ]; // Array para rastrear o índice do próximo caractere a ser usado de cada sequência original.
     char candidatos[MAX_SEQ + 1][MAX_SEQ_STR_LEN]; // Matriz para gerar colunas candidatas.
@@ -157,7 +129,7 @@ void alinhaComArvore(char orig_seq[][MAX_FINAL_LEN], int lengths[], int nSeq, ch
         }
 
         // Antes de gerar novos filhos para 'paiAtual', limpa quaisquer filhos
-        // que possam ter sido gerados em uma iteração anterior (se a lógica de poda fosse diferente).
+        // que possam ter sido gerados em uma iteração anterior.
         // Na lógica atual de poda, isso garante que 'paiAtual' está pronto para novos filhos.
         if (paiAtual->primogenito != NULL) {
             liberaArvore(paiAtual->primogenito);
@@ -207,7 +179,7 @@ void alinhaComArvore(char orig_seq[][MAX_FINAL_LEN], int lengths[], int nSeq, ch
         // Escolhe o melhor filho (candidato com maior score) gerado para 'paiAtual'.
         No* melhorFilho = devolveMelhorFilho(paiAtual, nSeq);
         if (melhorFilho == NULL) { // Verificação de segurança (não deve acontecer).
-             printf("ERRO INTERNO: Nenhum melhorFilho encontrado. Parando.\n");
+             printf("ERRO INTERNO: Nenhum melhor Filho encontrado. Parando.\n");
              break; 
         }
 
@@ -225,7 +197,6 @@ void alinhaComArvore(char orig_seq[][MAX_FINAL_LEN], int lengths[], int nSeq, ch
         // Se a escolha gulosa NÃO faz progresso E AINDA HÁ sequências ativas,
         // força a escolha do Candidato 0 (que garantidamente faz progresso se houver seq. ativas).
         if (!progresso_seria_feito && !todas_terminaram(proximo_char, lengths, nSeq)) {
-            // A mensagem de INFO foi removida para a versão limpa, mas a lógica permanece.
             melhorFilho = no_cand0; // no_cand0 é o nó que representa o Candidato 0.
         }
         // Fim da Lógica para Forçar Progresso.
@@ -288,33 +259,30 @@ void alinhaComArvore(char orig_seq[][MAX_FINAL_LEN], int lengths[], int nSeq, ch
 }
 
 
-// Verifica se uma string (sequência) contém apenas caracteres alfabéticos.
-// Retorna 1 se válido, 0 caso contrário.
 int verificaCharValidos(char seq[]) {
-    // Itera sobre a string até o terminador nulo '\0'.
-    // Também verifica se o primeiro caractere não é '\n' (linha vazia).
+    // Se a string estiver vazia, considera-se inválida como uma sequência de DNA.
+    if (seq[0] == '\0') {
+        return 0;
+    }
+
     for (int i = 0; seq[i] != '\0' && seq[i] != '\n'; i++) {
-        if (!isalpha(seq[i])) { // isalpha() verifica se o caractere é uma letra.
-            return 0; // Encontrou um não-alfabético, retorna 0 (inválido).
+        // Converte o caractere atual para maiúsculo para fazer uma verificação case-insensitive.
+        char c_upper = toupper(seq[i]);
+
+        // Verifica se o caractere maiúsculo é uma das bases de DNA válidas.
+        if (c_upper != 'A' && c_upper != 'C' && c_upper != 'T' && c_upper != 'G') {
+            return 0; // Encontrou um caractere que não é A, C, T, ou G; retorna 0 (inválido).
         }
     }
-    return 1; // Todos os caracteres são alfabéticos, retorna 1 (válido).
+    return 1;
 }
 
-// Imprime as sequências de uma matriz.
-// 'maxLen' não é usado ativamente na impressão, pois printf("%s") usa o terminador nulo.
 void imprimirSequencia(char sequencia[][MAX_FINAL_LEN], int tamanhoSequencia, int maxLen_unused) {
-    // 'maxLen_unused' é um parâmetro não utilizado aqui.
     for (int i = 0; i < tamanhoSequencia; i++) { // Itera sobre cada sequência (linha).
         printf("%s\n", sequencia[i]); // Imprime a string da sequência seguida de uma nova linha.
     }
 }
 
-// Lê sequências de um arquivo de texto.
-// 'nomeArquivo': nome do arquivo a ser lido.
-// 'sequencias': matriz para armazenar as sequências lidas.
-// 'maxLen': ponteiro para armazenar o comprimento da maior sequência encontrada.
-// Retorna: o número de sequências lidas com sucesso, ou -1 em caso de erro de abertura.
 int lerSequencias(const char *nomeArquivo, char sequencias[][MAX_FINAL_LEN], int *maxLen) {
     FILE *arquivo; // Ponteiro para o arquivo.
     char linha[MAX_LEN + 10]; // Buffer para ler cada linha (MAX_LEN é para a seq. original, +10 de folga).
@@ -370,8 +338,6 @@ int lerSequencias(const char *nomeArquivo, char sequencias[][MAX_FINAL_LEN], int
     return contador_validas; // Retorna o número de sequências válidas lidas.
 }
 
-// Preenche o início das sequências com gaps ('-') para que todas
-// tenham o mesmo comprimento ('maxLen', que é o da maior sequência original).
 void preencheGapInicial(char seq[][MAX_FINAL_LEN], int nSeq, int maxLen) {
     for (int i = 0; i < nSeq; i++) { // Itera sobre cada sequência.
         int len_atual = strlen(seq[i]); // Pega o comprimento atual da sequência.
@@ -389,9 +355,6 @@ void preencheGapInicial(char seq[][MAX_FINAL_LEN], int nSeq, int maxLen) {
     }
 }
 
-// Calcula e imprime o score SP (Sum-of-Pairs) de um alinhamento.
-// 'lin': número de sequências (linhas).
-// 'col': número de colunas (comprimento do alinhamento).
 void calcular_score(char sequencias[][MAX_FINAL_LEN], int lin, int col) {
     int score_total = 0;
     int alpha_count = 0; // Contador para matches.
@@ -432,9 +395,6 @@ void calcular_score(char sequencias[][MAX_FINAL_LEN], int lin, int col) {
     score_total > 0 ? printf(" = +%d\n", score_total) : printf(" = %d\n", score_total);
 }
 
-// Calcula o score SP (Sum-of-Pairs) para uma única coluna representada pelo vetor 'vet'.
-// 'nSeq': número de sequências (elementos no vetor 'vet').
-// Retorna: o score calculado para a coluna.
 int calcScoreColuna(char vet[], int nSeq) {
     int score = 0; // Inicializa o score da coluna.
 
@@ -463,11 +423,6 @@ int calcScoreColuna(char vet[], int nSeq) {
     return score; // Retorna o score da coluna.
 }
 
-// Verifica se todos os caracteres de todas as sequências originais já foram processados.
-// 'proximo_char': array com os índices do próximo caractere a ser usado de cada sequência.
-// 'lengths': array com os comprimentos pré-calculados de cada sequência original.
-// 'nSeq': número de sequências.
-// Retorna: 1 se todas as sequências terminaram, 0 caso contrário.
 int todas_terminaram(int proximo_char[], int lengths[], int nSeq) {
     for (int i = 0; i < nSeq; i++) { // Itera sobre cada sequência.
         // Se o índice do próximo caractere for menor que o comprimento da sequência,
@@ -478,9 +433,3 @@ int todas_terminaram(int proximo_char[], int lengths[], int nSeq) {
     }
     return 1; // Se o loop completou, todas as sequências terminaram; retorna 1 (verdadeiro).
 }
-
-// A função alinhaSequenciasGreedy está comentada, pois foi substituída por alinhaComArvore.
-// Ela representava uma abordagem gulosa sem a estrutura de árvore explícita.
-// void alinhaSequenciasGreedy(char orig_seq[][MAX_FINAL_LEN], int nSeq, int orig_max_len, char final_seq[][MAX_FINAL_LEN], int *final_len) {
-//     ... (código da versão antiga) ...
-// }

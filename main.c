@@ -1,15 +1,11 @@
-// main.c
-#include "functions.h" // Inclui os protótipos de todas as funções, definições e outras bibliotecas necessárias
+#include "functions.h"
 
 int main() {
     // Declaração das matrizes para armazenar as sequências:
-    // - sequencias: armazena as sequências originais lidas do arquivo.
-    // - sequencias_inicial: armazena uma cópia para o alinhamento inicial com gaps no começo.
-    // - melhor_alinhamento: armazena o resultado do alinhamento final.
     // MAX_FINAL_LEN permite que as sequências cresçam com a inserção de gaps.
-    char sequencias[MAX_SEQ][MAX_FINAL_LEN];
-    char sequencias_inicial[MAX_SEQ][MAX_FINAL_LEN];
-    char melhor_alinhamento[MAX_SEQ][MAX_FINAL_LEN];
+    char sequencias[MAX_SEQ][MAX_FINAL_LEN]; // - sequencias: armazena as sequências originais lidas do arquivo.
+    char sequencias_inicial[MAX_SEQ][MAX_FINAL_LEN]; // - sequencias_inicial: armazena uma cópia para o alinhamento inicial com gaps no começo.
+    char melhor_alinhamento[MAX_SEQ][MAX_FINAL_LEN]; // - melhor_alinhamento: armazena o resultado do alinhamento final.
     
     // --- INICIALIZAÇÃO DAS MATRIZES ---
     // Preenche as matrizes com zeros (caractere nulo '\0') para evitar lixo de memória.
@@ -96,5 +92,5 @@ int main() {
 
     printf("\n\n"); // Adiciona espaço extra no final da saída.
 
-    return 0; // Indica que o programa terminou com sucesso.
+    return 0;
 }

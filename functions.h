@@ -1,17 +1,11 @@
-// functions.h
-
-// Include Guard: Evita inclusões múltiplas do cabeçalho.
 #ifndef FUNCTIONS_H
 #define FUNCTIONS_H
 
-// Inclusões de bibliotecas padrão do C.
-#include <stdio.h>   // Para entrada/saída padrão (printf, FILE, fopen, etc.).
-#include <stdlib.h>  // Para funções gerais (malloc, free, atoi, system, etc.).
-#include <string.h>  // Para manipulação de strings (strcpy, strlen, memset, etc.).
-#include <ctype.h>   // Para funções de classificação de caracteres (isalpha, etc.).
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 
-// Inclusão do nosso cabeçalho de estruturas.
-// Define a estrutura 'No' usada nas funções da árvore.
 #include "structs.h"
 
 // --- Constantes Globais ---
@@ -20,7 +14,7 @@
 #define MAX_SEQ 50
 
 /** @brief Comprimento máximo de uma sequência original (sem contar gaps de alinhamento).
- * Considera 100 caracteres para a sequência, 2 para folga/gaps iniciais (lógica antiga) e 1 para o '\0'.
+ * Considera 100 caracteres para a sequência, 2 para folga/gaps iniciais e 1 para o '\0'.
  */
 #define MAX_LEN 103
 
@@ -39,10 +33,6 @@
 #define DELTA -2
 /** @brief Pontuação para um par formado por dois gaps. */
 #define GAP_GAP 0
-
-// --- Protótipos das Funções ---
-
-// --- Protótipos das Funções da Árvore N-ária ---
 
 /**
  * @brief Cria um novo nó para a árvore de alinhamento.
@@ -89,7 +79,7 @@ void liberaArvore(No* no);
  */
 void reconstroiAlinhamento(No* raiz, int nSeq, char final_seq[][MAX_FINAL_LEN], int *final_len);
 
-// --- Nova Função de Alinhamento Principal ---
+// ---  Função de Alinhamento Principal ---
 
 /**
  * @brief Realiza o alinhamento múltiplo de sequências usando uma abordagem gulosa baseada em árvore N-ária.
@@ -114,9 +104,10 @@ void alinhaComArvore(char orig_seq[][MAX_FINAL_LEN], int lengths[], int nSeq, ch
 int lerSequencias(const char *nomeArquivo, char sequencias[][MAX_FINAL_LEN], int *maxLen);
 
 /**
- * @brief Verifica se uma dada string (sequência) contém apenas caracteres alfabéticos.
+ * @brief Verifica se uma dada string (sequência) contém apenas caracteres de DNA válidos (A, C, T, G).
+ * A verificação é case-insensitive (ignora maiúsculas/minúsculas).
  * @param seq A string (sequência de DNA) a ser validada.
- * @return 1 se a sequência for válida (apenas letras), 0 caso contrário.
+ * @return 1 se a sequência contiver apenas bases de DNA válidas, 0 caso contrário (incluindo string vazia).
  */
 int verificaCharValidos(char seq[]);
 
