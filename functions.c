@@ -1,347 +1,512 @@
+// functions.c
 #include "functions.h"
+#include <errno.h> // Para verificar erros ao abrir arquivos
 
-No* criaNovoNo(const char seq[], No* pai_no, int col_idx, double score_col) {
-    // 1. Aloca memória
+// Implementações das funções virão aqui...
+
+// Implementação simples para limpar a tela (multiplataforma)
+void limparTela() {
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
+}
+
+// --- Implementações da Árvore ---
+
+No* criaNovoNo(char seq[], int score_coluna) {
     No* novo = (No*)malloc(sizeof(No));
-    
-    // 2. Verifica se a alocação falhou
-    if (novo == NULL) {
-        perror("ERRO: Falha na alocacao de memoria para novo No");
-        exit(1); // Encerra o programa se falhar
+    if (!novo) {
+        perror("Erro ao alocar memoria para No");
+        exit(1);
     }
-
-    // 3. Inicializa os campos do novo nó
-    strcpy(novo->varSeq, seq);      // Copia a coluna para o nó
-    novo->primogenito = NULL;       // Inicializa com NULL
-    novo->irmao = NULL;             // Inicializa com NULL
-    novo->pai = pai_no;             // Define quem é o pai
-    novo->coluna_index = col_idx;   // Define o índice da coluna
-
-    // Calcula o score acumulado: score do pai + score desta coluna
-    // Se for o nó raiz (pai_no == NULL), o score do pai é 0.
-    novo->score = (pai_no ? pai_no->score : 0.0) + score_col;
-
-    // 4. Retorna o ponteiro para o nó criado
+    novo->primogenito = NULL;
+    novo->irmao = NULL;
+    strcpy(novo->varSeq, seq);
+    novo->score = score_coluna;
     return novo;
 }
 
+No* iniciaArvore() {
+    return criaNovoNo("RAIZ", 0); // Nó raiz dummy
+}
+
+// Insere um filho a um nó pai. Adiciona no final da lista de irmãos.
 void inserirFilho(No* pai, No* filho) {
-    // Verifica se os ponteiros são válidos
-    if (pai == NULL || filho == NULL) {
-        fprintf(stderr, "AVISO: Tentativa de inserir com ponteiro NULO (pai ou filho).\n"); //Lança aviso
-        return;
-    }
+    if (!pai || !filho) return;
 
-    // Se o pai não tem nenhum filho (primogênito)
-    if (pai->primogenito == NULL) {
-        pai->primogenito = filho; // O novo nó se torna o primeiro filho
-    } else {
-        // Se já tem filhos, percorre a lista de irmãos até encontrar o último
-        No* p_aux = pai->primogenito;
-        while (p_aux->irmao != NULL) {
-            p_aux = p_aux->irmao; // Avança para o próximo irmão
+    if (!pai->primogenito) { // Se não tem filho, este é o primeiro
+        pai->primogenito = filho;
+    } else { // Se já tem, vai até o último irmão
+        No* p = pai->primogenito;
+        while (p->irmao) {
+            p = p->irmao;
         }
-        // O último irmão encontrado agora aponta para o novo filho
-        p_aux->irmao = filho;
+        p->irmao = filho;
     }
 }
 
-void liberaArvore(No* raiz) {
-    // Se o nó é nulo, encerra.
-    if (raiz == NULL) {
-        return;
+// Encontra o filho com o maior score
+No* devolveMelhorFilho(No *pai, int nSeq) {
+    if (!pai || !pai->primogenito) return NULL;
+
+    No *filho = pai->primogenito;
+    No *maior = filho;
+
+    while (filho != NULL) {
+        // O score já foi calculado ao criar o nó.
+        // Apenas comparamos.
+        if (maior->score < filho->score) {
+            maior = filho;
+        }
+        filho = filho->irmao;
     }
-
-    // Ponteiro auxiliar para percorrer os filhos
-    No* filho_atual = raiz->primogenito;
-
-    // Loop para liberar CADA sub-árvore dos filhos
-    while (filho_atual != NULL) {
-        No* proximo_irmao = filho_atual->irmao; // Guarda o próximo irmão antes de liberar o atual
-        liberaArvore(filho_atual);              // Chama recursivamente para liberar a sub-árvore do filho
-        filho_atual = proximo_irmao;            // Vai para o próximo irmão (que foi guardado)
-    }
-
-    // Após liberar todas as sub-árvores dos filhos, libera o próprio nó raiz.
-    free(raiz);
+    return maior;
 }
 
-int lerSequencias(const char *filename, char seq[][MAX_LEN_ALN], int *nSeq, int *maxLen, int orig_lengths[]) {
-    FILE *file_ptr;
-    char line_buffer[MAX_LEN_ALN + 2]; // +2 para \n e \0
-    int count = 0;
-    int current_len = 0;
-    int line_num = 0; // Para reportar a linha do arquivo
+// Libera a memória da árvore (pós-ordem)
+void liberaArvore(No* no) {
+    if (no == NULL) return;
+    liberaArvore(no->primogenito);
+    liberaArvore(no->irmao);
+    free(no);
+}
 
-    // 1. Tenta abrir o arquivo para leitura ("r")
-    file_ptr = fopen(filename, "r");
+// Percorre o caminho guloso (apenas primogênitos) e monta o alinhamento
+void reconstroiAlinhamento(No* raiz, int nSeq, char final_seq[][MAX_FINAL_LEN], int *final_len) {
+    *final_len = 0;
+    No* atual = raiz->primogenito; // Pula a raiz dummy
 
-    // 2. Verifica se o arquivo foi aberto com sucesso
-    if (file_ptr == NULL) {
-        perror("ERRO ao abrir o arquivo"); // Mostra o erro específico do sistema
-        fprintf(stderr, "Verifique se o arquivo '%s' existe no mesmo diretorio.\n", filename);
-        return -1; // Retorna -1 para indicar falha
+    while (atual != NULL) {
+        if (*final_len >= MAX_FINAL_LEN - 1) break; // Segurança
+
+        for (int i = 0; i < nSeq; i++) {
+            final_seq[i][*final_len] = atual->varSeq[i];
+        }
+        (*final_len)++;
+        atual = atual->primogenito; // Vai para o próximo (e único) filho no caminho
     }
 
-    printf("Lendo arquivo '%s'...\n", filename);
+    // Adiciona o terminador nulo
+    for (int i = 0; i < nSeq; i++) {
+        final_seq[i][*final_len] = '\0';
+    }
+}
 
-    // 3. Lê o arquivo linha por linha
-    while (fgets(line_buffer, sizeof(line_buffer), file_ptr) != NULL) {
-        
-        // Verifica se excedeu o limite de sequências
-        if (count >= MAX_SEQS) {
-            fprintf(stderr, "AVISO: Limite de %d sequencias atingido. Ignorando o resto do arquivo.\n", MAX_SEQS);
+void alinhaComArvore(char orig_seq[][MAX_FINAL_LEN], int lengths[], int nSeq, char final_seq[][MAX_FINAL_LEN], int *final_len) {
+    int proximo_char[MAX_SEQ];
+    char candidatos[MAX_SEQ + 1][MAX_SEQ_STR_LEN];
+
+    No* raiz = iniciaArvore();
+    No* paiAtual = raiz;
+
+    for (int i = 0; i < nSeq; i++) {
+        proximo_char[i] = 0;
+    }
+    // *final_len será definido por reconstroiAlinhamento
+
+    for(int i=0; i<nSeq; i++) {
+        final_seq[i][0] = '\0';
+    }
+
+    int iter_count = 0; // Ainda útil para a segurança contra loops inesperados
+
+    while (!todas_terminaram(proximo_char, lengths, nSeq)) {
+
+        iter_count++;
+        if (iter_count > (MAX_LEN * 3) + nSeq) { // Limite de segurança
+            printf("ERRO: Loop excedeu limite de iteracoes!\n");
             break;
         }
 
-        // Remove a quebra de linha (\n ou \r\n) que fgets() pode incluir
-        line_buffer[strcspn(line_buffer, "\r\n")] = 0;
-
-        // Ignora linhas vazias
-        if (strlen(line_buffer) == 0) {
-            continue;
+        if (paiAtual->primogenito != NULL) {
+            liberaArvore(paiAtual->primogenito);
+            paiAtual->primogenito = NULL;
         }
 
-        // Verifica o tamanho da linha (sequência)
-        current_len = strlen(line_buffer);
-        if (current_len > MAX_LEN_INIT) {
-            fprintf(stderr, "AVISO: Sequencia %d ('%.10s...') excede %d caracteres. Ignorando.\n", 
-                    count + 1, line_buffer, MAX_LEN_INIT);
-            continue; 
-        }
+        memset(candidatos, 0, sizeof(candidatos));
+        No* no_cand0 = NULL;
 
-        // Validando a sequência
-        int is_valid = 1; // Flag para indicar se a sequência é válida
-        for (int i = 0; i < current_len; i++) {
-            char c = toupper(line_buffer[i]); // Converte para maiúscula para facilitar
-            if (c != 'A' && c != 'C' && c != 'G' && c != 'T') {
-                fprintf(stderr, "AVISO: Caractere invalido ('%c') encontrado na linha %d. Ignorando sequencia.\n",
-                        line_buffer[i], line_num);
-                is_valid = 0; // Marca como inválida
-                break;        // Sai do loop de validação
+        // Candidato 0
+        for (int k = 0; k < nSeq; k++) {
+            if (proximo_char[k] < lengths[k]) {
+                candidatos[0][k] = orig_seq[k][proximo_char[k]];
+            } else {
+                candidatos[0][k] = '-';
             }
-            line_buffer[i] = c; // Armazena a versão maiúscula (opcional)
+        }
+        candidatos[0][nSeq] = '\0';
+        no_cand0 = criaNovoNo(candidatos[0], calcScoreColuna(candidatos[0], nSeq));
+        inserirFilho(paiAtual, no_cand0);
+
+        // Candidatos 1 a N
+        for (int j = 0; j < nSeq; j++) {
+            int indice_candidato_array = j + 1;
+            int pode_gerar_este = 1;
+
+            for (int k = 0; k < nSeq; k++) {
+                if (k == j) {
+                    if(proximo_char[k] < lengths[k]) {
+                        candidatos[indice_candidato_array][k] = '-';
+                    } else { pode_gerar_este = 0; break; }
+                } else {
+                    if (proximo_char[k] < lengths[k]) {
+                        candidatos[indice_candidato_array][k] = orig_seq[k][proximo_char[k]];
+                    } else { candidatos[indice_candidato_array][k] = '-'; }
+                }
+            }
+            candidatos[indice_candidato_array][nSeq] = '\0';
+
+            if(pode_gerar_este) {
+                inserirFilho(paiAtual, criaNovoNo(candidatos[indice_candidato_array], calcScoreColuna(candidatos[indice_candidato_array], nSeq)));
+            }
         }
 
-        // Se a sequência não for válida, pula para a próxima linha
-        if (!is_valid) {
-            continue;
+        No* melhorFilho = devolveMelhorFilho(paiAtual, nSeq);
+        if (melhorFilho == NULL) {
+             break;
         }
 
-        // 4. Armazena a sequência e seu tamanho
-        strcpy(seq[count], line_buffer);
-        orig_lengths[count] = current_len;
-
-        // 5. Atualiza o tamanho máximo
-        if (current_len > *maxLen) {
-            *maxLen = current_len;
+        int progresso_seria_feito = 0;
+        for(int k=0; k < nSeq; k++) {
+            if(melhorFilho->varSeq[k] != '-' && proximo_char[k] < lengths[k]) {
+                progresso_seria_feito = 1;
+                break;
+            }
         }
 
-        // 6. Incrementa o contador de sequências lidas
-        count++;
+        if (!progresso_seria_feito && !todas_terminaram(proximo_char, lengths, nSeq)) {
+            melhorFilho = no_cand0;
+        }
+
+        No* lista_para_liberar = NULL;
+        No* prev = NULL;
+        No* curr = paiAtual->primogenito;
+
+        while(curr != NULL && curr != melhorFilho) {
+            prev = curr;
+            curr = curr->irmao;
+        }
+        if (curr == melhorFilho) {
+            if (prev == NULL) {
+                lista_para_liberar = melhorFilho->irmao;
+            } else {
+                prev->irmao = melhorFilho->irmao;
+                lista_para_liberar = paiAtual->primogenito;
+            }
+        } else {
+             lista_para_liberar = paiAtual->primogenito;
+        }
+        liberaArvore(lista_para_liberar);
+        paiAtual->primogenito = melhorFilho;
+        melhorFilho->irmao = NULL;
+
+        paiAtual = melhorFilho;
+
+        for (int k = 0; k < nSeq; k++) {
+            if (paiAtual->varSeq[k] != '-') {
+                 proximo_char[k]++;
+            }
+        }
     }
 
-    // 7. Fecha o arquivo
-    fclose(file_ptr);
+    reconstroiAlinhamento(raiz, nSeq, final_seq, final_len);
+    liberaArvore(raiz);
+}
 
-    // 8. Verifica se pelo menos 2 sequências foram lidas
-    if (count < 2) {
-        fprintf(stderr, "ERRO: O arquivo deve conter pelo menos 2 sequencias validas.\n");
+
+// Implementação de verificaCharValidos (adaptada do original)
+int verificaCharValidos(char seq[]) {
+    for (int i = 0; seq[i] != '\0' && seq[i] != '\n'; i++) {
+        if (!isalpha(seq[i])) {
+            return 0; // Inválido se não for letra
+        }
+        // Opcional: Validar se são apenas A, C, T, G
+        // char c = toupper(seq[i]);
+        // if (c != 'A' && c != 'C' && c != 'T' && c != 'G') {
+        //     return 0;
+        // }
+    }
+    return 1; // Válido
+}
+
+// Implementação de imprimirSequencia (adaptada do original)
+void imprimirSequencia(char sequencia[][MAX_FINAL_LEN], int tamanhoSequencia, int maxLen) {
+    for (int i = 0; i < tamanhoSequencia; i++) {
+        printf("%s\n", sequencia[i]);
+    }
+}
+
+int lerSequencias(const char *nomeArquivo, char sequencias[][MAX_FINAL_LEN], int *maxLen) {
+    FILE *arquivo;
+    char linha[MAX_LEN + 10]; // Buffer um pouco maior
+    int contador_validas = 0; // Conta apenas as válidas
+    int numero_linha = 0;     // Conta todas as linhas lidas
+    size_t len_atual = 0;
+
+    *maxLen = 0;
+
+    arquivo = fopen(nomeArquivo, "r");
+    if (arquivo == NULL) {
+        perror("Erro ao abrir o arquivo");
         return -1;
     }
 
-    // 9. Atualiza o número de sequências e retorna sucesso
-    *nSeq = count;
-    printf("%d sequencias lidas com sucesso. Maior sequencia: %d.\n", *nSeq, *maxLen);
-    return 0; // Retorna 0 para indicar sucesso
+    while (fgets(linha, sizeof(linha), arquivo) != NULL) {
+        numero_linha++; // Incrementa a linha atual
+
+        // Verifica se excedemos o limite de sequências válidas
+        if (contador_validas >= MAX_SEQ) {
+            printf("Aviso: Limite de %d sequencias atingido. Linha %d e seguintes ignoradas.\n", MAX_SEQ, numero_linha);
+            break;
+        }
+
+        // Remove \n e \r (mais robusto)
+        linha[strcspn(linha, "\r\n")] = 0;
+
+        // Pula linhas vazias
+        if (strlen(linha) == 0) {
+            continue;
+        }
+
+        len_atual = strlen(linha);
+
+        // Verifica o tamanho máximo
+        if (len_atual > (MAX_LEN - 3)) {
+            // Imprime apenas os primeiros 80 chars para não poluir
+            printf("Aviso: Sequencia '%.80s...' (linha %d) excede 100 caracteres e sera ignorada.\n", linha, numero_linha);
+            continue;
+        }
+
+        // Verifica caracteres válidos
+        if (!verificaCharValidos(linha)) {
+            printf("Aviso: Sequencia '%s' (linha %d) contem caracteres invalidos e sera ignorada.\n", linha, numero_linha);
+            continue;
+        }
+
+        // Se passou, copia e atualiza
+        strcpy(sequencias[contador_validas], linha);
+        if (len_atual > *maxLen) {
+            *maxLen = len_atual;
+        }
+        contador_validas++; // Incrementa apenas as válidas
+    }
+
+    fclose(arquivo);
+
+    // Se nenhuma sequência válida foi lida, mas o arquivo foi aberto,
+    // o retorno será 0. O main.c já trata isso.
+    return contador_validas;
 }
 
-double calcScoreColuna(const char vet[], int nSeq) {
-    double score_col = 0.0;
+void preencheGapInicial(char seq[][MAX_FINAL_LEN], int nSeq, int maxLen) {
+    for (int i = 0; i < nSeq; i++) {
+        int len_atual = strlen(seq[i]);
+        int gaps_a_adicionar = maxLen - len_atual;
 
-    // Itera por todos os pares únicos de sequências na coluna
-    for (int i = 0; i < nSeq - 1; i++) {
-        for (int j = i + 1; j < nSeq; j++) {
-            
-            char char1 = vet[i];
-            char char2 = vet[j];
+        if (gaps_a_adicionar > 0) {
+            // Desloca os caracteres existentes para a direita
+            // Usamos MAX_LEN como tamanho do buffer para memmove
+            memmove(&seq[i][gaps_a_adicionar], &seq[i][0], len_atual + 1); // +1 para o '\0'
 
-            // 1. Par Gap-Gap: Geralmente tem score 0 (não penaliza nem bonifica)
-            if (char1 == '-' && char2 == '-') {
-                score_col += 0; // Ou DELTA se quiser penalizar
-            } 
-            // 2. Par Base-Gap: Aplica a penalidade DELTA
-            else if (char1 == '-' || char2 == '-') {
-                score_col += DELTA; 
-            } 
-            // 3. Par Base-Base
-            else {
-                // 3a. Match (Bases Iguais): Aplica o bônus ALPHA
-                if (char1 == char2) {
-                    score_col += ALPHA; 
-                } 
-                // 3b. Mismatch (Bases Diferentes): Aplica a penalidade BETA
+            // Preenche o início com gaps
+            memset(&seq[i][0], '-', gaps_a_adicionar);
+        }
+    }
+}
+
+void calcular_score(char sequencias[][MAX_FINAL_LEN], int lin, int col) {
+    int score_total = 0;
+    int alpha_count = 0;
+    int beta_count = 0;
+    int delta_count = 0;
+
+    // Itera por cada coluna
+    for (int i = 0; i < col; i++) {
+        // Itera por cada par de sequências (j, k) dentro da coluna
+        for (int j = 0; j < lin - 1; j++) {
+            for (int k = j + 1; k < lin; k++) {
+                char base1 = sequencias[j][i];
+                char base2 = sequencias[k][i];
+
+                // Regra 1: Gap + Gap
+                if (base1 == '-' && base2 == '-') {
+                    score_total += GAP_GAP; // Soma 0
+                }
+                // Regra 2: Gap + Base (ou Base + Gap)
+                else if (base1 == '-' || base2 == '-') {
+                    score_total += DELTA;
+                    delta_count++;
+                }
+                // Regra 3: Base + Base
                 else {
-                    score_col += BETA;  
+                    // Sub-regra 3a: Match
+                    if (base1 == base2) {
+                        score_total += ALPHA;
+                        alpha_count++;
+                    }
+                    // Sub-regra 3b: Mismatch
+                    else {
+                        score_total += BETA;
+                        beta_count++;
+                    }
                 }
             }
         }
     }
-    return score_col;
+
+    // Imprime o resultado detalhado
+    printf("(α * %d) + (β * %d) + (δ * %d)", alpha_count, beta_count, delta_count);
+    score_total > 0 ? printf(" = +%d\n", score_total) : printf(" = %d\n", score_total);
 }
 
-void gerarVariacoes(No* pai, int nSeq, char orig_seq[][MAX_LEN_ALN], int orig_lengths[], int col_idx) {
-    char coluna_base[MAX_SEQS + 1];
-    int tem_base = 0; // 1 se a coluna base tiver pelo menos uma base, 0 se for só gaps.
+int calcScoreColuna(char vet[], int nSeq) {
+    int score = 0;
 
-    // 1. Constrói a 'coluna_base' com base nas sequências e comprimentos originais
-    for(int i = 0; i < nSeq; i++) {
-       // Se o índice da coluna atual for menor que o tamanho original da sequência 'i'...
-       if (col_idx < orig_lengths[i]) {
-           coluna_base[i] = orig_seq[i][col_idx]; // ...usa a base original.
-           tem_base = 1; // Marca que encontramos pelo menos uma base.
-       } else {
-           coluna_base[i] = '-'; // ...senão, usa um gap.
-       }
-    }
-    coluna_base[nSeq] = '\0'; // Termina a string da coluna.
+    // Itera por cada par de sequências (i, j) dentro da coluna
+    for (int i = 0; i < nSeq - 1; i++) {
+        for (int j = i + 1; j < nSeq; j++) {
+            char base1 = vet[i];
+            char base2 = vet[j];
 
-    // 2. Se a coluna_base contém pelo menos uma base nitrogenada...
-    if (tem_base) {
-        // 2a. Adiciona a própria 'coluna_base' como um filho possível.
-        double score_base = calcScoreColuna(coluna_base, nSeq);
-        No* filho_base = criaNovoNo(coluna_base, pai, col_idx, score_base);
-        inserirFilho(pai, filho_base);
-
-        // 2b. Gera variações com 1 gap (substituindo uma base por '-')
-        for (int k = 0; k < nSeq; k++) {
-            // Só gera variação se na posição 'k' HOUVER uma base (não um gap).
-            if (coluna_base[k] != '-') { 
-                char coluna_gap[MAX_SEQS + 1];
-                strcpy(coluna_gap, coluna_base); // Copia a base.
-                coluna_gap[k] = '-';             // Insere o gap na posição 'k'.
-                
-                double score_gap = calcScoreColuna(coluna_gap, nSeq);
-                No* filho_gap = criaNovoNo(coluna_gap, pai, col_idx, score_gap);
-                inserirFilho(pai, filho_gap);
+            // Regra 1: Gap + Gap
+            if (base1 == '-' && base2 == '-') {
+                score += GAP_GAP;
+            }
+            // Regra 2: Gap + Base (ou Base + Gap)
+            else if (base1 == '-' || base2 == '-') {
+                score += DELTA;
+            }
+            // Regra 3: Base + Base
+            else {
+                // Sub-regra 3a: Match
+                if (base1 == base2) {
+                    score += ALPHA;
+                }
+                // Sub-regra 3b: Mismatch
+                else {
+                    score += BETA;
+                }
             }
         }
-        
-        // 2c. Adiciona a coluna 'só-gaps' como uma opção *adicional*.
-        //     O algoritmo guloso poderá escolhê-la se o score for melhor.
-        char coluna_so_gap[MAX_SEQS+1];
-        for(int i = 0; i < nSeq; i++) coluna_so_gap[i] = '-';
-        coluna_so_gap[nSeq] = '\0';
-        double score_so_gap = calcScoreColuna(coluna_so_gap, nSeq);
-        No* filho_so_gap = criaNovoNo(coluna_so_gap, pai, col_idx, score_so_gap);
-        inserirFilho(pai, filho_so_gap);
-
-    } 
-    // 3. Se a 'coluna_base' já é 'só-gaps' (porque todas as sequências originais acabaram)...
-    else {
-        // ... a única opção é gerar a coluna 'só-gaps'.
-        double score = calcScoreColuna(coluna_base, nSeq); // Score será 0
-        No* filho = criaNovoNo(coluna_base, pai, col_idx, score);
-        inserirFilho(pai, filho);
     }
+    return score;
 }
 
-bool is_all_gaps(const char vet[], int nSeq) {
+int todas_terminaram(int proximo_char[], int lengths[], int nSeq) {
     for (int i = 0; i < nSeq; i++) {
-        if (vet[i] != '-') {
-            return false; // Encontrou uma base, não é só gaps
+        if (proximo_char[i] < lengths[i]) {
+            return 0; // Pelo menos uma não terminou
         }
     }
-    return true; // Não encontrou bases, é só gaps
+    return 1; // Todas terminaram
 }
 
-// No* devolveMelhorFilho(No* pai) {
-//     if (pai == NULL || pai->primogenito == NULL) {
-//         return NULL; 
+// void alinhaSequenciasGreedy(char orig_seq[][MAX_FINAL_LEN], int nSeq, int orig_max_len, char final_seq[][MAX_FINAL_LEN], int *final_len) {
+//     int proximo_char[MAX_SEQ];
+//     char candidatos[MAX_SEQ + 1][MAX_SEQ];
+//     int scores[MAX_SEQ + 1];
+//     int melhor_indice;
+//     int melhor_score;
+
+//     // Inicializa os índices e o comprimento final
+//     for (int i = 0; i < nSeq; i++) {
+//         proximo_char[i] = 0;
+//     }
+//     *final_len = 0;
+
+//     // Inicializa final_seq com '\0'
+//     for(int i=0; i<nSeq; i++) {
+//         final_seq[i][0] = '\0';
 //     }
 
-//     No* filho_atual = pai->primogenito;
-//     No* melhor_filho = NULL; // Começa sem melhor filho
-//     double max_score = -DBL_MAX; // Começa com um score muito baixo
-//     No* fallback_all_gaps = NULL; // Guarda o nó 'só-gaps' caso seja a única opção
-//     int nSeq = strlen(filho_atual->varSeq); // Pega o nSeq do primeiro filho
+//     // Loop principal
+//     while (!todas_terminaram(proximo_char, orig_seq, nSeq)) {
 
-//     // Percorre todos os filhos
-//     while (filho_atual != NULL) {
-//         bool eh_so_gaps = is_all_gaps(filho_atual->varSeq, nSeq);
+//         memset(candidatos, 0, sizeof(candidatos));
+//         memset(scores, 0, sizeof(scores));
 
-//         // Se o filho atual for 'só-gaps'...
-//         if (eh_so_gaps) {
-//             fallback_all_gaps = filho_atual; // ... guarda ele como última opção.
-//         } 
-//         // Se o filho atual NÃO for 'só-gaps'...
-//         else {
-//             // ... e se o score dele for o maior encontrado ATÉ AGORA...
-//             if (filho_atual->score > max_score) {
-//                 max_score = filho_atual->score; // ... atualiza o score máximo.
-//                 melhor_filho = filho_atual;   // ... e marca ele como o melhor.
+//         // Candidato 0
+//         for (int k = 0; k < nSeq; k++) {
+//             if (proximo_char[k] < strlen(orig_seq[k])) {
+//                 candidatos[0][k] = orig_seq[k][proximo_char[k]];
+//             } else {
+//                 candidatos[0][k] = '-';
 //             }
 //         }
-//         filho_atual = filho_atual->irmao; // Vai para o próximo irmão.
+//         scores[0] = calcScoreColuna(candidatos[0], nSeq);
+//         melhor_score = scores[0];
+//         melhor_indice = 0;
+
+//         // Candidatos 1 a N
+//         for (int j = 0; j < nSeq; j++) {
+//             int indice_candidato = j + 1;
+//             int pode_gerar_este = 1;
+
+//             for (int k = 0; k < nSeq; k++) {
+//                 if (k == j) {
+//                     if(proximo_char[k] < strlen(orig_seq[k])) {
+//                         candidatos[indice_candidato][k] = '-';
+//                     } else {
+//                         pode_gerar_este = 0; break;
+//                     }
+//                 } else {
+//                     if (proximo_char[k] < strlen(orig_seq[k])) {
+//                         candidatos[indice_candidato][k] = orig_seq[k][proximo_char[k]];
+//                     } else {
+//                         candidatos[indice_candidato][k] = '-';
+//                     }
+//                 }
+//             }
+
+//             if(pode_gerar_este) {
+//                 scores[indice_candidato] = calcScoreColuna(candidatos[indice_candidato], nSeq);
+//                 if (scores[indice_candidato] > melhor_score) {
+//                     melhor_score = scores[indice_candidato];
+//                     melhor_indice = indice_candidato;
+//                 }
+//             } else {
+//                 scores[indice_candidato] = -99999;
+//             }
+//         }
+
+//         // <<<--- ADICIONAR ESTA VERIFICAÇÃO AQUI ---<<<
+//         int so_gaps = 1;
+//         for(int k = 0; k < nSeq; k++) {
+//             if (candidatos[melhor_indice][k] != '-') {
+//                 so_gaps = 0;
+//                 break;
+//             }
+//         }
+//         // Se a melhor coluna só tem gaps, paramos o loop.
+//         if (so_gaps) {
+//             break;
+//         }
+//         // <<<-----------------------------------------<<<
+
+//         // Adiciona a melhor coluna
+//         for (int k = 0; k < nSeq; k++) {
+//             final_seq[k][*final_len] = candidatos[melhor_indice][k];
+//         }
+//         (*final_len)++;
+
+//         // Atualiza os índices
+//         for (int k = 0; k < nSeq; k++) {
+//             if (candidatos[melhor_indice][k] != '-') {
+//                  proximo_char[k]++;
+//             }
+//         }
+
+//         // Medida de segurança
+//         if(*final_len >= MAX_FINAL_LEN -1) {
+//             printf("Aviso: Alinhamento excedeu o tamanho máximo!\n");
+//             break;
+//         }
 //     }
 
-//     // Se encontramos um 'melhor_filho' que NÃO é 'só-gaps', retorna ele.
-//     if (melhor_filho != NULL) {
-//         return melhor_filho;
-//     } 
-//     // Senão, retorna o 'só-gaps' (ou NULL se nem isso existia).
-//     else {
-//         return fallback_all_gaps;
+//     // Garante terminação nula
+//     for(int i = 0; i < nSeq; i++) {
+//         final_seq[i][*final_len] = '\0';
 //     }
 // }
-
-void reconstruirAlinhamento(No* no_final, char alinhamento_final[][MAX_LEN_ALN], int nSeq, int max_len) {
-    if (no_final == NULL) {
-        fprintf(stderr, "ERRO: Nó final nulo para reconstrução.\n");
-        return;
-    }
-
-    No* no_atual = no_final;
-    int col_atual = no_final->coluna_index;
-
-    // 1. Preenche toda a matriz final com '-' inicialmente.
-    //    Isso garante que colunas não preenchidas fiquem com gaps.
-    for (int i = 0; i < nSeq; i++) {
-        for (int j = 0; j < max_len; j++) {
-            alinhamento_final[i][j] = '-';
-        }
-        alinhamento_final[i][max_len] = '\0'; // Termina a string
-    }
-
-    // 2. Preenche da direita para a esquerda, voltando pela árvore.
-    while (no_atual != NULL && no_atual->pai != NULL && col_atual >= 0) {
-        // Verifica se o índice da coluna é válido
-        if (col_atual < max_len) {
-            for (int i = 0; i < nSeq; i++) {
-                alinhamento_final[i][col_atual] = no_atual->varSeq[i];
-            }
-        }
-        no_atual = no_atual->pai; // Sobe para o pai
-        col_atual--;             // Vai para a coluna anterior
-    }
-}
-
-void imprimirAlinhamento(char seq[][MAX_LEN_ALN], int nSeq) {
-    if (nSeq <= 0) return;
-
-    for (int i = 0; i < nSeq; i++) {
-        printf("%s\n", seq[i]); // Imprime cada sequência alinhada
-    }
-}
-
-int compare_nodes(const void *a, const void *b) {
-    // Converte os ponteiros genéricos para ponteiros para ponteiros de No
-    // Isso é necessário porque qsort trabalha com arrays de 'No*'
-    No* nodeA = *(No**)a;
-    No* nodeB = *(No**)b;
-
-    // Compara os scores para ordenar do MAIOR para o MENOR
-    if (nodeA->score < nodeB->score) return 1;  // B é maior, B vem antes
-    if (nodeA->score > nodeB->score) return -1; // A é maior, A vem antes
-    return 0; // Scores iguais, a ordem não importa
-}

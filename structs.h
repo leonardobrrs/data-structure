@@ -1,32 +1,21 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <time.h>
-#include <float.h>
-#include <stdbool.h>
-#include <errno.h> // Para usar 'perror' em erros de arquivo
+// structs.h
+#ifndef STRUCTS_H
+#define STRUCTS_H
 
-#define MAX_SEQS 50   // Limite para AB2
-#define MAX_LEN_INIT 100 // Limite inicial das sequências
-#define MAX_LEN_ALN 150  // Estimativa do tamanho máximo alinhado
+#include <stdlib.h> // Para malloc e NULL
+#include <string.h> // Para strcpy
+#include "functions.h" // Para MAX_SEQ
 
-#define K_BEAM_WIDTH 5 // Largura do beam search
+// Definimos MAX_SEQ_STR_LEN aqui para o varSeq
+// Deve ser grande o suficiente para MAX_SEQ + 1 (para '\0')
+#define MAX_SEQ_STR_LEN (50 + 1)
 
-#define ALPHA 1
-#define BETA 0
-#define DELTA -2
+typedef struct no {
+    char varSeq[MAX_SEQ_STR_LEN]; // Variação da coluna (até 50 seqs + '\0')
+    struct no *primogenito;   // Primeiro filho
+    struct no *irmao;         // Irmão ao lado
+    int score;                // Score da coluna (se necessário)
 
-// 0: os gaps devem ocorrer preferencialmente no início da sequência
-// 1: os gaps devem ocorrer preferencialmente no final da sequência
-// 2:  os gaps devem ocorrer preferencialmente no meio da sequência
-#define GAP_PREF 0
-
-typedef struct No {
-    char varSeq[MAX_SEQS + 1]; // Coluna representada por este nó
-    struct No *primogenito;    // Ponteiro para o primeiro filho
-    struct No *irmao;          // Ponteiro para o próximo irmão
-    struct No *pai;            // Ponteiro para o pai (essencial para reconstruir)
-    double score;              // Score total do alinhamento até este nó
-    int coluna_index;          // Índice da coluna (debug/reconstrução)
 } No;
+
+#endif // STRUCTS_H
