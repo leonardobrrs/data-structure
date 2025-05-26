@@ -2,12 +2,9 @@
 
 Este é um projeto desenvolvido para a disciplina de Estrutura de Dados da Universidade Federal de Alagoas (UFAL).
 
-**Universidade:** Universidade Federal de Alagoas (UFAL).
-
-**Disciplina:** Estrutura de Dados.
-
-**Professora:** Roberta Vilhena Vieira Lopes.
-
+**Universidade:** Universidade Federal de Alagoas (UFAL)
+**Disciplina:** Estrutura de Dados
+**Professora:** Roberta Vilhena Vieira Lopes
 **Alunos:**
 * Leonardo Barbosa Barros
 * José Herberty de Oliveira Freire
@@ -29,7 +26,7 @@ O algoritmo funciona da seguinte maneira:
     * **ALPHA (Match):** +1 (Bases idênticas)
     * **BETA (Mismatch):** 0 (Bases diferentes)
     * **DELTA (Base-Gap):** -2 (Uma base e um gap)
-    * **GAP_GAP (Gap-Gap):** 0 (Dois gaps)
+    * **GAP\_GAP (Gap-Gap):** 0 (Dois gaps)
 5.  **Abordagem Gulosa:** O algoritmo escolhe a coluna candidata com o maior score (`devolveMelhorFilho`) para adicionar ao alinhamento. A árvore é então "podada", mantendo apenas o caminho correspondente à escolha gulosa, e o processo continua a partir deste novo nó. Uma lógica é implementada para forçar o progresso caso a melhor escolha seja uma coluna apenas com gaps.
 6.  **Reconstrução:** Após processar todas as sequências, o alinhamento final é reconstruído percorrendo o caminho escolhido na árvore (`reconstroiAlinhamento`).
 7.  **Cálculo de Score Final:** O score total do alinhamento final é calculado (`calcular_score`) e exibido.
