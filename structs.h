@@ -5,16 +5,39 @@
 #include <string.h>
 #include "functions.h"
 
-// Define o tamanho máximo da string que armazena uma coluna na árvore.
-// Se temos até 50 sequências (MAX_SEQ), e cada caractere na coluna representa uma base de uma sequência, então a string precisa de 50 caracteres + 1 para o terminador nulo '\0'.
-#define MAX_SEQ_STR_LEN (50 + 1)
+/** @brief Número máximo de sequências que o programa pode processar. */
+#define MAX_SEQ 50
 
-// Esta estrutura representa um nó na árvore que será usada para construir e avaliar os alinhamentos.
-typedef struct no {
-    char varSeq[MAX_SEQ_STR_LEN]; // Campo para armazenar a representação da coluna de alinhamento deste nó.
-    struct no *primogenito; // Ponteiro para o primeiro filho deste nó na árvore.
-    struct no *irmao; // Ponteiro para o próximo nó irmão.
-    int score; // Campo para armazenar o score associado à coluna representada por 'varSeq'.
-} No;
+/** @brief Comprimento máximo de uma sequência original (sem contar gaps de alinhamento).
+ * Considera 100 caracteres para a sequência, 2 para folga/gaps iniciais e 1 para o '\0'.
+ */
+#define MAX_LEN 103
+
+/** @brief Comprimento máximo estimado para uma sequência após o alinhamento (incluindo gaps).
+ * Definido como o dobro de MAX_LEN para acomodar a inserção de gaps.
+ */
+#define MAX_FINAL_LEN (MAX_LEN * 2)
+
+/** @brief Pontuação para um par de bases idênticas (match). */
+#define ALPHA 1
+/** @brief Pontuação para um par de bases diferentes (mismatch). */
+#define BETA 0
+/** @brief Pontuação para um par formado por uma base e um gap. */
+#define DELTA -2
+/** @brief Pontuação para um par formado por dois gaps. */
+#define GAP_GAP 0
+/** @brief Pontuação para proibir certos caminhos. */
+#define LIMITE_NEGATIVO -100000000
+
+/**
+ * @brief Estrutura para armazenar uma sequência, seu comprimento original
+ * e seu índice original antes da ordenação.
+ * Usada para facilitar a ordenação das sequências por comprimento.
+ */
+typedef struct {
+    char texto_seq[MAX_FINAL_LEN];
+    int tamanho_original;
+    int indice_antes_ordenar;
+} DetalheSequencia;
 
 #endif

@@ -8,92 +8,6 @@
 
 #include "structs.h"
 
-// --- Constantes Globais ---
-
-/** @brief Número máximo de sequências que o programa pode processar. */
-#define MAX_SEQ 50
-
-/** @brief Comprimento máximo de uma sequência original (sem contar gaps de alinhamento).
- * Considera 100 caracteres para a sequência, 2 para folga/gaps iniciais e 1 para o '\0'.
- */
-#define MAX_LEN 103
-
-/** @brief Comprimento máximo estimado para uma sequência após o alinhamento (incluindo gaps).
- * Definido como o dobro de MAX_LEN para acomodar a inserção de gaps.
- */
-#define MAX_FINAL_LEN (MAX_LEN * 2)
-
-// --- Parâmetros de Pontuação para o Alinhamento ---
-
-/** @brief Pontuação para um par de bases idênticas (match). */
-#define ALPHA 1
-/** @brief Pontuação para um par de bases diferentes (mismatch). */
-#define BETA 0
-/** @brief Pontuação para um par formado por uma base e um gap. */
-#define DELTA -2
-/** @brief Pontuação para um par formado por dois gaps. */
-#define GAP_GAP 0
-
-/**
- * @brief Cria um novo nó para a árvore de alinhamento.
- * @param seq A string (coluna) que este nó representará.
- * @param score_coluna O score calculado para esta coluna.
- * @return Ponteiro para o novo nó criado e alocado dinamicamente.
- */
-No* criaNovoNo(char seq[], int score_coluna);
-
-/**
- * @brief Inicializa a árvore criando um nó raiz dummy.
- * @return Ponteiro para o nó raiz da árvore.
- */
-No* iniciaArvore();
-
-/**
- * @brief Insere um nó 'filho' como descendente de um nó 'pai'.
- * O filho é adicionado ao final da lista de irmãos do primogênito do pai.
- * @param pai Ponteiro para o nó pai.
- * @param filho Ponteiro para o nó filho a ser inserido.
- */
-void inserirFilho(No* pai, No* filho);
-
-/**
- * @brief Encontra e retorna o filho de um nó 'pai' que possui o maior score.
- * @param pai Ponteiro para o nó pai cujos filhos serão avaliados.
- * @param nSeq O número de sequências no alinhamento (usado para calcular o score da coluna nos filhos).
- * @return Ponteiro para o nó filho com o maior score, ou NULL se não houver filhos.
- */
-No* devolveMelhorFilho(No *pai, int nSeq);
-
-/**
- * @brief Libera recursivamente toda a memória alocada para uma árvore (ou subárvore) a partir do nó fornecido.
- * @param no Ponteiro para o nó raiz da árvore/subárvore a ser liberada.
- */
-void liberaArvore(No* no);
-
-/**
- * @brief Reconstrói a matriz de alinhamento final percorrendo o caminho guloso na árvore.
- * @param raiz Ponteiro para o nó raiz da árvore de alinhamento (o nó dummy inicial).
- * @param nSeq Número de sequências.
- * @param final_seq Matriz 2D onde o alinhamento final será armazenado.
- * @param final_len Ponteiro para um inteiro que armazenará o comprimento do alinhamento final.
- */
-void reconstroiAlinhamento(No* raiz, int nSeq, char final_seq[][MAX_FINAL_LEN], int *final_len);
-
-// ---  Função de Alinhamento Principal ---
-
-/**
- * @brief Realiza o alinhamento múltiplo de sequências usando uma abordagem gulosa baseada em árvore N-ária.
- * @param orig_seq Matriz contendo as sequências originais a serem alinhadas.
- * @param lengths Array contendo os comprimentos pré-calculados de cada sequência original.
- * @param nSeq Número de sequências a serem alinhadas.
- * @param final_seq Matriz 2D onde o melhor alinhamento encontrado será armazenado.
- * @param final_len Ponteiro para um inteiro que armazenará o comprimento do alinhamento final.
- */
-void alinhaComArvore(char orig_seq[][MAX_FINAL_LEN], int lengths[], int nSeq, char final_seq[][MAX_FINAL_LEN], int *final_len);
-
-
-// --- Funções de Leitura e Validação de Sequências ---
-
 /**
  * @brief Lê sequências de DNA de um arquivo de texto especificado.
  * @param nomeArquivo O nome do arquivo (incluindo caminho, se necessário) a ser lido.
@@ -114,43 +28,12 @@ int verificaCharValidos(char seq[]);
 // --- Funções de Alinhamento e Cálculo de Score ---
 
 /**
- * @brief Preenche o início das sequências com gaps ('-') para que todas tenham o mesmo comprimento.
- * Usado para o "Alinhamento com gaps no inicio".
- * @param seq Matriz 2D de sequências a ser modificada.
- * @param nSeq Número de sequências na matriz.
- * @param maxLen O comprimento alvo para todas as sequências após o preenchimento (geralmente o da maior sequência original).
- */
-void preencheGapInicial(char seq[][MAX_FINAL_LEN], int nSeq, int maxLen);
-
-/**
- * @brief Calcula o score de uma única coluna de um alinhamento.
- * @param vet Array de caracteres representando a coluna (cada caractere é de uma sequência).
- * @param nCol Número de sequências (e, portanto, de caracteres na coluna/vetor).
- * @return O score total para a coluna fornecida.
- */
-int calcScoreColuna(char vet[], int nCol);
-
-/**
  * @brief Calcula e imprime o score SP (Sum-of-Pairs) total de uma matriz de alinhamento.
  * @param sequencias Matriz 2D contendo o alinhamento completo.
  * @param lin Número de sequências (linhas) no alinhamento.
  * @param col Número de colunas (comprimento) do alinhamento.
  */
 void calcular_score(char sequencias[][MAX_FINAL_LEN], int lin, int col);
-
-/**
- * @brief Verifica se todas as sequências já foram completamente processadas no algoritmo de alinhamento.
- * @param proximo_char Array contendo o índice do próximo caractere a ser considerado para cada sequência original.
- * @param lengths Array contendo os comprimentos pré-calculados de cada sequência original.
- * @param nSeq Número de sequências.
- * @return 1 se todas as sequências terminaram, 0 caso contrário.
- */
-int todas_terminaram(int proximo_char[], int lengths[], int nSeq);
-
-// Protótipo comentado de uma versão anterior da função de alinhamento.
-// void alinhaSequenciasGreedy(char orig_seq[][MAX_FINAL_LEN], int nSeq, int orig_max_len, char final_seq[][MAX_FINAL_LEN], int *final_len);
-
-// --- Funções Auxiliares ---
 
 /**
  * @brief Imprime uma matriz de sequências no console.
@@ -165,4 +48,45 @@ void imprimirSequencia(char sequencia[][MAX_FINAL_LEN], int tamanhoSequencia, in
  */
 void limparTela();
 
-#endif // FUNCTIONS_H
+/**
+ * @brief Retorna o maior valor entre três inteiros.
+ * @param a O primeiro inteiro.
+ * @param b O segundo inteiro.
+ * @param c O terceiro inteiro.
+ * @return O maior valor entre a, b e c.
+ */
+int max_tres(int a, int b, int c);
+
+/**
+ * @brief Alinha duas sequências globalmente usando o algoritmo de Needleman-Wunsch.
+ * @param seq1 A primeira sequência de DNA (string terminada em nulo).
+ * @param seq2 A segunda sequência de DNA (string terminada em nulo).
+ * @param aligned_seq1 Buffer para armazenar a primeira sequência alinhada (deve ser grande o suficiente).
+ * @param aligned_seq2 Buffer para armazenar a segunda sequência alinhada (deve ser grande o suficiente).
+ * @param evitar_gaps_em_seq1 Se 1, penaliza fortemente a inserção de gaps em seq1.
+ * Se 0, comportamento padrão do Needleman-Wunsch.
+ * @return O score ótimo do alinhamento global.
+ */
+int needleman_wunsch(const char *seq1, const char *seq2, char *aligned_seq1, char *aligned_seq2, int evitar_gaps_em_seq1);
+
+/**
+ * @brief Função de comparação para qsort, para ordenar DetalheSequencia
+ * em ordem decrescente de tamanho_original.
+ * @param elem1 Ponteiro para o primeiro elemento DetalheSequencia.
+ * @param elem2 Ponteiro para o segundo elemento DetalheSequencia.
+ * @return >0 se elem2 > elem1, <0 se elem1 > elem2, 0 se iguais (para decrescente).
+ */
+int compararPorTamanhoDesc(const void *elem1, const void *elem2);
+
+/**
+ * @brief Alinha múltiplas sequências usando a mais longa como referência e o
+ * algoritmo de Needleman-Wunsch para os alinhamentos par a par.
+ * @param sequencias_entrada Matriz com as sequências originais.
+ * @param comprimentos_entrada Array com os comprimentos das sequências originais.
+ * @param num_sequencias Número total de sequências.
+ * @param msa_final Matriz 2D para armazenar o alinhamento múltiplo resultante.
+ * @param comprimento_msa Ponteiro para um inteiro que armazenará o comprimento do alinhamento final.
+ */
+void alinharComReferenciaNW(char sequencias_entrada[][MAX_FINAL_LEN], int comprimentos_entrada[], int num_sequencias, char msa_final[][MAX_FINAL_LEN], int *comprimento_msa);
+
+#endif
