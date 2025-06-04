@@ -9,13 +9,21 @@
 #include "structs.h"
 
 /**
- * @brief Lê sequências de DNA de um arquivo de texto especificado.
- * @param nomeArquivo O nome do arquivo (incluindo caminho, se necessário) a ser lido.
- * @param sequencias Matriz 2D para armazenar as sequências lidas do arquivo.
- * @param maxLen Ponteiro para um inteiro que armazenará o comprimento da maior sequência original encontrada.
- * @return O número de sequências lidas com sucesso, ou -1 em caso de erro ao abrir o arquivo.
+ * @brief Lê sequências de um arquivo de texto e as armazena em uma lista encadeada.
+ * Aloca dinamicamente memória para cada nó da lista e para cada string de sequência.
+ * @param nomeArquivo O nome do arquivo a ser lido.
+ * @param numSeqLidas Ponteiro para um inteiro onde o número de sequências lidas será armazenado.
+ * @param maxLenOriginal Ponteiro para um inteiro onde o comprimento da maior sequência original será armazenado.
+ * @return Ponteiro para o início (cabeça) da lista encadeada de sequências, ou NULL em caso de erro.
  */
-int lerSequencias(const char *nomeArquivo, char sequencias[][MAX_FINAL_LEN], int *maxLen);
+NoSequencia* lerSequenciasParaLista(const char *nomeArquivo, int *numSeqLidas, int *maxLenOriginal);
+
+/**
+ * @brief Libera toda a memória alocada para uma lista encadeada de NoSequencia,
+ * incluindo as strings de sequência dentro de cada nó.
+ * @param cabeca Ponteiro para o início (cabeça) da lista encadeada a ser liberada.
+ */
+void liberarListaSequencias(NoSequencia *cabeca);
 
 /**
  * @brief Verifica se uma dada string (sequência) contém apenas caracteres de DNA válidos (A, C, T, G).
@@ -39,7 +47,7 @@ void calcular_score(char sequencias[][MAX_FINAL_LEN], int lin, int col);
  * @brief Imprime uma matriz de sequências no console.
  * @param sequencia Matriz 2D de sequências a ser impressa.
  * @param tamanhoSequencia Número de sequências (linhas) a serem impressas.
- * @param maxLen O comprimento das colunas a serem consideradas (parâmetro não utilizado ativamente na função, pois printf("%s") usa '\0').
+ * @param maxLen O comprimento das colunas a serem consideradas
  */
 void imprimirSequencia(char sequencia[][MAX_FINAL_LEN], int tamanhoSequencia, int maxLen);
 
@@ -59,10 +67,10 @@ int max_tres(int a, int b, int c);
 
 /**
  * @brief Alinha duas sequências globalmente usando o algoritmo de Needleman-Wunsch.
- * @param seq1 A primeira sequência de DNA (string terminada em nulo).
- * @param seq2 A segunda sequência de DNA (string terminada em nulo).
- * @param aligned_seq1 Buffer para armazenar a primeira sequência alinhada (deve ser grande o suficiente).
- * @param aligned_seq2 Buffer para armazenar a segunda sequência alinhada (deve ser grande o suficiente).
+ * @param seq1 A primeira sequência de DNA.
+ * @param seq2 A segunda sequência de DNA.
+ * @param aligned_seq1 Buffer para armazenar a primeira sequência alinhada.
+ * @param aligned_seq2 Buffer para armazenar a segunda sequência alinhada.
  * @param evitar_gaps_em_seq1 Se 1, penaliza fortemente a inserção de gaps em seq1.
  * Se 0, comportamento padrão do Needleman-Wunsch.
  * @return O score ótimo do alinhamento global.
@@ -81,12 +89,12 @@ int compararPorTamanhoDesc(const void *elem1, const void *elem2);
 /**
  * @brief Alinha múltiplas sequências usando a mais longa como referência e o
  * algoritmo de Needleman-Wunsch para os alinhamentos par a par.
- * @param sequencias_entrada Matriz com as sequências originais.
- * @param comprimentos_entrada Array com os comprimentos das sequências originais.
- * @param num_sequencias Número total de sequências.
+ * @param conjunto_ordenado_detalhes Array de estruturas DetalheSequencia, já ordenado
+ * pelo tamanho da sequência em ordem decrescente.
+ * @param num_sequencias Número total de sequências no array.
  * @param msa_final Matriz 2D para armazenar o alinhamento múltiplo resultante.
  * @param comprimento_msa Ponteiro para um inteiro que armazenará o comprimento do alinhamento final.
  */
-void alinharComReferenciaNW(char sequencias_entrada[][MAX_FINAL_LEN], int comprimentos_entrada[], int num_sequencias, char msa_final[][MAX_FINAL_LEN], int *comprimento_msa);
+void alinharComReferenciaNW(DetalheSequencia *conjunto_ordenado_detalhes, int num_sequencias, char msa_final[][MAX_FINAL_LEN], int *comprimento_msa);
 
 #endif

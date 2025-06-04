@@ -2,6 +2,7 @@
     "files.associations": {
         "*.rmd": "markdown",
         "functions.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "errno.h": "c"
     }
 }

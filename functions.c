@@ -9,6 +9,100 @@ void limparTela() {
 #endif
 }
 
+NoSequencia* lerSequenciasParaLista(const char *nomeArquivo, int *numSeqLidas, int *maxLenOriginal) {
+    FILE *arquivo;
+    char linha_buffer[MAX_LEN + 10];
+    
+    NoSequencia *cabeca = NULL;
+    NoSequencia *atual = NULL;
+    int contador_seq = 0;
+    int max_len = 0;
+    int indice_leitura = 0;
+
+    *numSeqLidas = 0;
+    *maxLenOriginal = 0;
+
+    arquivo = fopen(nomeArquivo, "r");
+    if (arquivo == NULL) {
+        perror("Erro ao abrir o arquivo em lerSequenciasParaLista");
+        return NULL;
+    }
+
+    while (fgets(linha_buffer, sizeof(linha_buffer), arquivo) != NULL) {
+        linha_buffer[strcspn(linha_buffer, "\r\n")] = 0;
+
+        if (strlen(linha_buffer) == 0) {
+            continue;
+        }
+
+        if (strlen(linha_buffer) >  MAX_LEN-3) {
+            printf("Aviso: Sequencia '%s...' muito longa (max %d) e sera ignorada.\n", linha_buffer, MAX_LEN-3);
+            continue;
+        }
+        
+        if (!verificaCharValidos(linha_buffer)) {
+            printf("Aviso: Sequencia '%s' contem caracteres invalidos e sera ignorada.\n", linha_buffer);
+            continue;
+        }
+
+        NoSequencia *novoNo = (NoSequencia*)malloc(sizeof(NoSequencia));
+        if (novoNo == NULL) {
+            perror("Falha ao alocar NoSequencia");
+            liberarListaSequencias(cabeca);
+            fclose(arquivo);
+            return NULL;
+        }
+
+        novoNo->textoDaSequencia = (char*)malloc(strlen(linha_buffer) + 1);
+        if (novoNo->textoDaSequencia == NULL) {
+            perror("Falha ao alocar textoDaSequencia");
+            free(novoNo);
+            liberarListaSequencias(cabeca);
+            fclose(arquivo);
+            return NULL;
+        }
+        strcpy(novoNo->textoDaSequencia, linha_buffer);
+        novoNo->comprimento = strlen(novoNo->textoDaSequencia);
+        novoNo->indice_original_leitura = indice_leitura++;
+        novoNo->proximaSeq = NULL;
+
+        if (novoNo->comprimento > max_len) {
+            max_len = novoNo->comprimento;
+        }
+
+        if (cabeca == NULL) {
+            cabeca = novoNo;
+            atual = novoNo;
+        } else {
+            atual->proximaSeq = novoNo;
+            atual = novoNo;
+        }
+        contador_seq++;
+        if (contador_seq >= MAX_SEQ) {
+            printf("Aviso: Limite de %d sequencias atingido.\n", MAX_SEQ);
+            break;
+        }
+    }
+
+    fclose(arquivo);
+    *numSeqLidas = contador_seq;
+    *maxLenOriginal = max_len;
+    return cabeca;
+}
+
+void liberarListaSequencias(NoSequencia *cabeca) {
+    NoSequencia *atual = cabeca;
+    NoSequencia *proximo_a_liberar;
+
+    while (atual != NULL) {
+        proximo_a_liberar = atual;
+        atual = atual->proximaSeq;
+        
+        free(proximo_a_liberar->textoDaSequencia);
+        free(proximo_a_liberar);
+    }
+}
+
 int verificaCharValidos(char seq[]) {
     if (seq[0] == '\0') {
         return 0;
@@ -28,58 +122,6 @@ void imprimirSequencia(char sequencia[][MAX_FINAL_LEN], int tamanhoSequencia, in
     for (int i = 0; i < tamanhoSequencia; i++) {
         printf("%s\n", sequencia[i]);
     }
-}
-
-int lerSequencias(const char *nomeArquivo, char sequencias[][MAX_FINAL_LEN], int *maxLen) {
-    FILE *arquivo;
-    char linha[MAX_LEN + 10];
-    int contador_validas = 0;
-    int numero_linha = 0;
-    size_t len_atual = 0;
-
-    *maxLen = 0;
-
-    arquivo = fopen(nomeArquivo, "r");
-    if (arquivo == NULL) {
-        perror("Erro ao abrir o arquivo");
-        return -1;
-    }
-
-    while (fgets(linha, sizeof(linha), arquivo) != NULL) {
-        numero_linha++;
-
-        if (contador_validas >= MAX_SEQ) {
-            printf("Aviso: Limite de %d sequencias atingido. Linha %d e seguintes ignoradas.\n", MAX_SEQ, numero_linha);
-            break;
-        }
-
-        linha[strcspn(linha, "\r\n")] = 0;
-
-        if (strlen(linha) == 0) {
-            continue;
-        }
-
-        len_atual = strlen(linha);
-
-        if (len_atual > (MAX_LEN - 3)) {
-            printf("Aviso: Sequencia '%.80s...' (linha %d) excede 100 caracteres e sera ignorada.\n", linha, numero_linha);
-            continue;
-        }
-
-        if (!verificaCharValidos(linha)) {
-            printf("Aviso: Sequencia '%s' (linha %d) contem caracteres invalidos e sera ignorada.\n", linha, numero_linha);
-            continue;
-        }
-
-        strcpy(sequencias[contador_validas], linha);
-        if (len_atual > *maxLen) {
-            *maxLen = len_atual;
-        }
-        contador_validas++;
-    }
-
-    fclose(arquivo);
-    return contador_validas;
 }
 
 void calcular_score(char sequencias[][MAX_FINAL_LEN], int lin, int col) {
@@ -250,73 +292,60 @@ int compararPorTamanhoDesc(const void *elem1, const void *elem2) {
     return 0;
 }
 
-void alinharComReferenciaNW(char sequencias_entrada[][MAX_FINAL_LEN], int comprimentos_entrada[], int num_sequencias, char msa_final[][MAX_FINAL_LEN], int *comprimento_msa) {
+void alinharComReferenciaNW(DetalheSequencia *conjunto_ordenado_detalhes, int num_sequencias, char msa_final[][MAX_FINAL_LEN], int *comprimento_msa) {
 
     if (num_sequencias == 0) {
         *comprimento_msa = 0;
         return;
     }
     if (num_sequencias == 1) {
-        strcpy(msa_final[0], sequencias_entrada[0]);
-        *comprimento_msa = comprimentos_entrada[0];
-        msa_final[0][*comprimento_msa] = '\0';
+        int idx_original = conjunto_ordenado_detalhes[0].indice_antes_ordenar;
+        strncpy(msa_final[idx_original], conjunto_ordenado_detalhes[0].texto_seq, MAX_FINAL_LEN -1);
+        msa_final[idx_original][MAX_FINAL_LEN-1] = '\0';
+        *comprimento_msa = conjunto_ordenado_detalhes[0].tamanho_original;
+        
+        if (*comprimento_msa < MAX_FINAL_LEN) {
+             msa_final[idx_original][*comprimento_msa] = '\0';
+        }
         return;
     }
 
-    DetalheSequencia array_detalhes_seq[MAX_SEQ];
-    for (int i = 0; i < num_sequencias; i++) {
-        if (comprimentos_entrada[i] < MAX_FINAL_LEN) {
-            strncpy(array_detalhes_seq[i].texto_seq, sequencias_entrada[i], comprimentos_entrada[i]);
-            array_detalhes_seq[i].texto_seq[comprimentos_entrada[i]] = '\0';
-        } else {
-            strncpy(array_detalhes_seq[i].texto_seq, sequencias_entrada[i], MAX_FINAL_LEN -1);
-            array_detalhes_seq[i].texto_seq[MAX_FINAL_LEN -1] = '\0';
-        }
-        array_detalhes_seq[i].tamanho_original = comprimentos_entrada[i];
-        array_detalhes_seq[i].indice_antes_ordenar = i;
-    }
-
-    qsort(array_detalhes_seq, num_sequencias, sizeof(DetalheSequencia), compararPorTamanhoDesc);
-
-    DetalheSequencia ref_principal = array_detalhes_seq[0];
+    DetalheSequencia ref_principal = conjunto_ordenado_detalhes[0];
+    
     strcpy(msa_final[ref_principal.indice_antes_ordenar], ref_principal.texto_seq);
     *comprimento_msa = ref_principal.tamanho_original;
-    msa_final[ref_principal.indice_antes_ordenar][*comprimento_msa] = '\0';
+    
+    if (*comprimento_msa < MAX_FINAL_LEN) {
+        msa_final[ref_principal.indice_antes_ordenar][*comprimento_msa] = '\0';
+    } else {
+        msa_final[ref_principal.indice_antes_ordenar][MAX_FINAL_LEN -1] = '\0';
+    }
 
-    char ref_alinhada_temp[MAX_FINAL_LEN + MAX_FINAL_LEN];
-    char seq_atual_alinhada_temp[MAX_FINAL_LEN + MAX_FINAL_LEN];
+    char ref_alinhada_temp[MAX_FINAL_LEN * 2];
+    char seq_atual_alinhada_temp[MAX_FINAL_LEN * 2];
 
     for (int i = 1; i < num_sequencias; i++) {
-        DetalheSequencia seq_atual_para_alinhar = array_detalhes_seq[i];
+        DetalheSequencia seq_atual_para_alinhar = conjunto_ordenado_detalhes[i];
 
         memset(ref_alinhada_temp, 0, sizeof(ref_alinhada_temp));
         memset(seq_atual_alinhada_temp, 0, sizeof(seq_atual_alinhada_temp));
 
-        needleman_wunsch(ref_principal.texto_seq, seq_atual_para_alinhar.texto_seq, ref_alinhada_temp, seq_atual_alinhada_temp, 1);
+        needleman_wunsch(ref_principal.texto_seq, seq_atual_para_alinhar.texto_seq, ref_alinhada_temp,             seq_atual_alinhada_temp, 1);
 
-        int idx_msa = 0;
-        int idx_ref_alin = 0;
-        int idx_seq_alin = 0;
+        strncpy(msa_final[seq_atual_para_alinhar.indice_antes_ordenar], seq_atual_alinhada_temp, MAX_FINAL_LEN - 1);
+        msa_final[seq_atual_para_alinhar.indice_antes_ordenar][MAX_FINAL_LEN - 1] = '\0';
 
-        while (idx_ref_alin < strlen(ref_alinhada_temp) || idx_seq_alin < strlen(seq_atual_alinhada_temp)) {
-            if (idx_msa >= *comprimento_msa) {
-                break;
-            }
-
-            if (idx_ref_alin < strlen(ref_alinhada_temp) && ref_alinhada_temp[idx_ref_alin] != '-') {
-                msa_final[seq_atual_para_alinhar.indice_antes_ordenar][idx_msa] = seq_atual_alinhada_temp[idx_seq_alin];
-                idx_ref_alin++;
-                idx_seq_alin++;
-            }
-            idx_msa++;
-        }
-
-        strcpy(msa_final[seq_atual_para_alinhar.indice_antes_ordenar], seq_atual_alinhada_temp);
         int len_seq_alinhada_agora = strlen(msa_final[seq_atual_para_alinhar.indice_antes_ordenar]);
 
-        for (int k = len_seq_alinhada_agora; k < *comprimento_msa; k++) {
-            msa_final[seq_atual_para_alinhar.indice_antes_ordenar][k] = '-';
+        for (int k_pad = len_seq_alinhada_agora; k_pad < *comprimento_msa; k_pad++) {
+            if (k_pad < MAX_FINAL_LEN -1) {
+                msa_final[seq_atual_para_alinhar.indice_antes_ordenar][k_pad] = '-';
+            }
         }
-        msa_final[seq_atual_para_alinhar.indice_antes_ordenar][*comprimento_msa] = '\0';
+        if (*comprimento_msa < MAX_FINAL_LEN) {
+            msa_final[seq_atual_para_alinhar.indice_antes_ordenar][*comprimento_msa] = '\0';
+        } else {
+             msa_final[seq_atual_para_alinhar.indice_antes_ordenar][MAX_FINAL_LEN -1] = '\0';
+        }
     }
 }
