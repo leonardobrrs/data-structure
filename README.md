@@ -1,76 +1,152 @@
 # Alinhamento Múltiplo de Sequências de DNA
 
-Este é um projeto desenvolvido para a disciplina de Estrutura de Dados da Universidade Federal de Alagoas (UFAL).
+Este projeto foi desenvolvido para a disciplina de Estrutura de Dados da Universidade Federal de Alagoas (UFAL). O objetivo é implementar um programa que realiza a operação de alinhamento múltiplo de sequências de DNA.
 
-**Universidade:** 
+**Universidade:**
 * Universidade Federal de Alagoas (UFAL)
 
-**Disciplina:** 
+**Disciplina:**
 * Estrutura de Dados
 
-**Professora:** 
+**Professora:**
 * Roberta Vilhena Vieira Lopes
 
 **Alunos:**
-
 * Leonardo Barbosa Barros
 * José Herberty de Oliveira Freire
 
+---
+
 ## Sobre o Projeto
 
-O objetivo deste projeto é implementar um algoritmo para realizar o Alinhamento Múltiplo de Sequências (Multiple Sequence Alignment - MSA) de DNA. O MSA é uma ferramenta fundamental em bioinformática, usada para identificar regiões conservadas, prever funções de genes e proteínas, e estudar relações evolutivas.
+O alinhamento múltiplo de sequências (MSA) é um processo fundamental em bioinformática que consiste em alinhar três ou mais sequências biológicas (como DNA, RNA ou proteínas) para identificar regiões de similaridade que podem indicar relações funcionais, estruturais ou evolutivas entre as sequências.
 
-Este projeto utiliza uma abordagem gulosa (greedy) com uma Árvore N-ária para encontrar um alinhamento com boa pontuação. Dada um conjunto de sequências de DNA lidas de um arquivo, o programa constrói iterativamente um alinhamento, coluna por coluna, escolhendo a melhor opção em cada passo com base em um sistema de pontuação.
+Este projeto visa implementar um programa para realizar o alinhamento múltiplo de sequências de DNA. A entrada é um conjunto de sequências de DNA ($S_{input} = \{s_1, s_2, ..., s_i, ...\}$) com tamanhos variando até um máximo de **100 caracteres**. O resultado ($S_{output} = \{r_1, r_2, ..., r_i, ...\}$) é um conjunto de sequências, todas com o mesmo comprimento (m), construídas pela inserção de *gaps* (buracos, representados por "-") nas sequências originais.
 
-## Implementação
+O objetivo é que, para toda posição $j$ (variando de 1 a $m$), o valor da fórmula de pontuação (*score*) seja maximizado. A fórmula de *score* é:
+$score = \alpha x + \beta y + \delta z$
 
-O algoritmo funciona da seguinte maneira:
+Onde:
+* $\alpha$: Peso para $x$ pares de bases nitrogenadas iguais na mesma posição.
+* $\beta$: Peso para $y$ pares de bases nitrogenadas diferentes na mesma posição.
+* $\delta$: Peso para $z$ pares formados por um *gap* e uma base nitrogenada na mesma posição.
 
-1.  **Leitura e Validação:** As sequências de DNA são lidas de um arquivo de texto. Cada linha representa uma sequência. O programa valida se as sequências contêm apenas caracteres válidos (A, C, T, G) e se não excedem o limite de 100 caracteres. Sequências inválidas ou muito longas são ignoradas.
-2.  **Árvore N-ária:** Uma árvore N-ária é utilizada para explorar as possíveis colunas do alinhamento. Cada nó na árvore representa uma possível coluna de alinhamento (`varSeq`), e seus filhos (`primogenito`) representam as possíveis colunas seguintes.
-3.  **Geração de Candidatos:** Em cada passo, o algoritmo gera um conjunto de colunas candidatas. Estas incluem uma coluna onde se tenta usar o próximo caractere de cada sequência e colunas onde se introduz um *gap* ('-') em uma das sequências.
-4.  **Sistema de Pontuação (Sum-of-Pairs - SP):** Cada coluna candidata é avaliada com base em um sistema de pontuação *Sum-of-Pairs*. A pontuação é calculada somando os scores de todos os pares de caracteres na coluna, usando os seguintes valores:
-    * **ALPHA (Match):** +1 (Bases idênticas)
-    * **BETA (Mismatch):** 0 (Bases diferentes)
-    * **DELTA (Base-Gap):** -2 (Uma base e um gap)
-    * **GAP\_GAP (Gap-Gap):** 0 (Dois gaps)
-5.  **Abordagem Gulosa:** O algoritmo escolhe a coluna candidata com o maior score (`devolveMelhorFilho`) para adicionar ao alinhamento. A árvore é então "podada", mantendo apenas o caminho correspondente à escolha gulosa, e o processo continua a partir deste novo nó. Uma lógica é implementada para forçar o progresso caso a melhor escolha seja uma coluna apenas com gaps.
-6.  **Reconstrução:** Após processar todas as sequências, o alinhamento final é reconstruído percorrendo o caminho escolhido na árvore (`reconstroiAlinhamento`).
-7.  **Cálculo de Score Final:** O score total do alinhamento final é calculado (`calcular_score`) e exibido.
+Além disso, para cada sequência $s_k$ em $S_{input}$, deve existir uma única sequência $r_k$ em $S_{output}$ tal que a remoção dos *gaps* de $r_k$ reproduza $s_k$.
+
+1.  As sequências são lidas de um arquivo de entrada.
+2.  A sequência mais longa é escolhida como referência inicial.
+3.  As demais sequências são alinhadas progressivamente a esta referência (que pode ser atualizada/expandida) usando o algoritmo de Needleman-Wunsch para alinhamentos par a par.
+
+---
+
+## Cálculo dos Pesos e Preferência de Gaps (Baseado em "José Freire")
+
+Os pesos $\alpha$, $\beta$, e $\delta$, bem como a preferência de posicionamento de *gaps*, são determinados com base no nome de um dos membros da equipe: **José Herberty de Oliveira Freire** (utilizando "José" como primeiro nome e "Freire" como último nome para os cálculos).
+
+### Cálculo dos Pesos (α, β, δ) - Nome: "José"
+
+1.  **Substituição das letras por números (conforme tabela do projeto):**
+    * J = 11
+    * O = 9
+    * S = 9
+    * É = 3
+    Soma = $11 + 9 + 9 + 3 = 32$
+
+2.  **Divisão por 3 e verificação do resto:**
+    * $32 \div 3 = 10$ com resto $2$.
+
+3.  **Determinação dos pesos com base no resto:**
+    * Resto 0: $\alpha= +1, \beta= 0, \delta= -1$
+    * Resto 1: $\alpha= +2, \beta= 0, \delta= -1$
+    * **Resto 2: $\alpha= +1, \beta= 0, \delta= -2$**
+
+Portanto, os pesos utilizados são:
+* $\alpha = +1$
+* $\beta = 0$
+* $\delta = -2$
+
+Esses valores estão definidos no arquivo `structs.h` como `ALPHA`, `BETA`, e `DELTA` respectivamente. O arquivo também define `GAP_GAP = 0` para o alinhamento entre dois *gaps*.
+
+### Preferência de Gaps - Sobrenome: "Freire"
+
+1.  **Substituição das letras por números (conforme tabela do projeto):**
+    * F = 5
+    * R = 4
+    * E = 3
+    * I = 8
+    * R = 4
+    * E = 3
+    Soma = $5 + 4 + 3 + 8 + 4 + 3 = 27$
+
+2.  **Divisão por 3 e verificação do resto:**
+    * $27 \div 3 = 9$ com resto $0$.
+
+3.  **Determinação da preferência de *gaps*:**
+    * **Resto 0: *Gaps* devem ocorrer preferencialmente no início da sequência.**
+    * Resto 1: *Gaps* devem ocorrer preferencialmente no final da sequência.
+    * Resto 2: *Gaps* devem ocorrer preferencialmente no meio da sequência.
+
+---
+
+## Funcionalidades Implementadas
+
+* **Leitura de Sequências:** O programa lê sequências de DNA de um arquivo `.txt`. As sequências devem conter apenas os caracteres 'A', 'C', 'T', 'G' (case-insensitive) e ter no máximo 100 caracteres (definido por `MAX_LEN` em `structs.h` considerando uma margem, a especificação do problema é 100). Linhas vazias ou sequências inválidas/muito longas são ignoradas.
+* **Validação de Caracteres:** Verifica se as sequências contêm apenas caracteres válidos (A, C, T, G).
+* **Alinhamento Progressivo:**
+    * As sequências de entrada são ordenadas por tamanho em ordem decrescente.
+    * A sequência mais longa é usada como referência inicial para o Alinhamento Múltiplo de Sequências (MSA).
+    * Cada sequência restante é alinhada à referência atual usando o algoritmo de Needleman-Wunsch. A referência é a primeira sequência (`seq1`) na chamada de `needleman_wunsch`, e a flag `evitar_gaps_em_seq1` é ativada para penalizar a introdução de gaps na referência.
+    * O MSA final é construído progressivamente.
+* **Cálculo de Score (Sum-of-Pairs):** Após o alinhamento, o *score* SP (Sum-of-Pairs) é calculado para o conjunto final de sequências alinhadas. A função `calcular_score` itera por cada coluna do alinhamento e soma as pontuações para todos os pares de bases (ou base-*gap*) nessa coluna.
+    * Match (ex: A/A): `ALPHA` (+1)
+    * Mismatch (ex: A/C): `BETA` (0)
+    * Base/Gap (ex: A/-): `DELTA` (-2)
+    * Gap/Gap (-/-): `GAP_GAP` (0)
+* **Impressão do Resultado:** As sequências alinhadas e o *score* final são impressos no console.
+
+---
+
+## Estrutura do Projeto e Arquivos
+
+* `main.c`: Contém a função `main`, que orquestra a leitura das sequências, o processo de alinhamento e a impressão dos resultados.
+* `functions.h`: Arquivo de cabeçalho com as declarações das funções utilizadas para o alinhamento, cálculo de *score*, leitura de sequências e outras utilidades.
+* `functions.c`: Implementação das funções declaradas em `functions.h`.
+* `structs.h`: Define estruturas de dados (como `DetalheSequencia`) e constantes globais (como `MAX_SEQ`, `MAX_LEN`, `MAX_FINAL_LEN`, e os pesos `ALPHA`, `BETA`, `DELTA`, `GAP_GAP`).
+* `gerador.py`: Um script Python para gerar arquivos de teste (`.txt`) com sequências de DNA aleatórias.
+* `data/`: Diretório destinado a armazenar os arquivos de entrada `.txt` contendo as sequências de DNA. O programa espera que os arquivos de entrada estejam nesta pasta (ex: `data/teste.txt`).
+* `README.md`: O arquivo de descrição do projeto (similar a este).
+
+---
+
+## Requisitos do Projeto (ABN1 e ABN2)
+
+* As sequências podem ter até **100 caracteres**.
+* **ABN1:** Alinhar 2 sequências de DNA.
+* **ABN2:** Alinhar até 50 sequências de DNA (o `MAX_SEQ` está definido como 50 em `structs.h`).
+
+---
 
 ## Como Compilar e Executar
 
-Certifique-se de ter um compilador C (como o GCC) instalado.
-
-1.  **Navegue até a pasta do projeto:**
+1.  **Compilação:**
+    Você precisará de um compilador C (como GCC). Navegue até o diretório raiz do projeto e compile os arquivos `.c`:
     ```bash
-    cd caminho/para/o/projeto
+    gcc main.c functions.c -o msa_program
     ```
-2.  **Compile os arquivos:**
+
+2.  **Execução:**
+    Após a compilação bem-sucedida, execute o programa:
     ```bash
-    gcc main.c functions.c -o main -Wall
+    ./msa_program
     ```
-3.  **Execute o programa:**
-    ```bash
-    ./main
+    O programa solicitará o nome do arquivo `.txt` contendo as sequências. Certifique-se de que este arquivo esteja localizado no diretório `data/`.
+    Por exemplo, se o seu arquivo for `teste.txt` dentro da pasta `data`, digite `teste.txt` quando solicitado.
+
+    **Exemplo de conteúdo de arquivo de entrada (`data/meu_arquivo.txt`):**
     ```
-4.  **Informe o nome do arquivo:** O programa solicitará que você digite o nome do arquivo `.txt` contendo as sequências (ex: `data.txt`). Os arquivos de dados devem estar localizados na subpasta `data/`.
+    ATGCGT
+    AGTC
+    ATGT
+    ```
 
-## Estrutura de Arquivos
-
-* `main.c`: Contém a função principal (`main`) que orquestra a execução do programa, incluindo a leitura do arquivo, chamada das funções de alinhamento e exibição dos resultados.
-* `functions.h`: Arquivo de cabeçalho que define as constantes (como os scores ALPHA, BETA, DELTA), as estruturas (`No`), e os protótipos de todas as funções utilizadas no projeto.
-* `functions.c`: Contém a implementação de todas as funções, incluindo a manipulação da árvore N-ária, a lógica do alinhamento guloso, o cálculo de scores, a leitura e validação de arquivos.
-* `structs.h`: Define a estrutura `No` utilizada para construir a árvore N-ária.
-* `data/`: Pasta contendo os arquivos de entrada (`.txt`) com as sequências de DNA. Inclui `data.txt` e vários arquivos `teste*.txt` para fins de avaliação.
-* `README.md`: Este arquivo.
-
-## Arquivos de Entrada
-
-Os arquivos de entrada devem:
-
-* Estar no formato `.txt`.
-* Estar localizados na pasta `data/`.
-* Conter uma sequência de DNA por linha.
-* Usar apenas os caracteres 'A', 'C', 'T', 'G' (maiúsculas ou minúsculas).
-* Ter sequências com no máximo 100 caracteres.
+---
